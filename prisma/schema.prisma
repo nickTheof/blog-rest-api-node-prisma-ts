@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        BigInt    @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  role      Role      @default(USER)
+  isActive  Boolean   @default(true) @map("is_active")
+  uuid      String    @unique @default(uuid()) @db.Char(36)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  profile   Profile?
+  posts     Post[]
+  comments  Comment[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
+model Profile {
+  id        BigInt  @id @default(autoincrement())
+  firstname String?
+  lastname  String?
+  bio       String
+  picUrl    String? @map("picture_url")
+  user      User    @relation(fields: [userId], references: [id])
+  userId    BigInt  @unique @map("user_id")
+
+  @@map("profiles")
+}
+
+model Post {
+  id          BigInt     @id @default(autoincrement())
+  title       String
+  description String
+  published   Boolean    @default(false)
+  uuid        String     @unique @default(uuid()) @db.Char(36)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  author      User       @relation(fields: [authorId], references: [id])
+  authorId    BigInt
+  category    Category[]
+  comments    Comment[]
+
+  @@map("posts")
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+
+  @@map("categories")
+}
+
+model Comment {
+  id        BigInt   @id @default(autoincrement())
+  title     String
+  uuid      String   @default(uuid()) @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    BigInt   @map("post_id")
+  author    User     @relation(fields: [userId], references: [id])
+  userId    BigInt   @map("user_id")
+
+  @@map("comments")
+}
