@@ -1,15 +1,15 @@
-import winston from "winston";
+import winston, {Logger} from "winston";
 import "winston-daily-rotate-file";
 import config from "../config/config";
 const {transports, format} = winston;
 const { combine, timestamp, printf, json, colorize } = format;
 
-const formatDefault = combine(
+const formatDefault: winston.Logform.Format = combine(
     timestamp({ format: "DD-MM-YYYY HH:mm:ss" }),
     json()
 );
 
-const logger = winston.createLogger({
+const logger: Logger = winston.createLogger({
     format: formatDefault
 });
 
@@ -18,7 +18,7 @@ const devConsoleTransport = new transports.Console({
     format: combine(
         colorize(),
         printf(
-            ({ level, message, timestamp }) => `${timestamp} [${level}]: ${message}`
+            ({ level, message, timestamp }: winston.Logform.TransformableInfo ): string => `${timestamp} [${level}]: ${message}`
         )
     ),
 });
