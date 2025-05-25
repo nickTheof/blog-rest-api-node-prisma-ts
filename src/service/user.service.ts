@@ -27,6 +27,10 @@ export const getByUuid = async (uuid: string) => {
     return prisma.user.findUniqueOrThrow({where: {uuid}});
 }
 
+export const getByEmail = async (email: string) => {
+    return prisma.user.findUniqueOrThrow({where: {email}});
+}
+
 export const create = async (data: CreateUserSchema) => {
     return prisma.user.create({
         data: {
