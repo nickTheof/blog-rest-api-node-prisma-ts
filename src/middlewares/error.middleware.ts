@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
 import { buildErrorResponse } from '../utils/errorResponse';
 import logger from '../utils/logger';
+import {AppError} from "../utils/AppError";
 
 export function errorHandler(
     err: unknown,
@@ -74,6 +75,23 @@ export function errorHandler(
             errors: [err.message],
         }));
         return;
+    }
+
+    if (err instanceof AppError) {
+        if (err.getCode() === 'EntityNotAuthorized') {
+            res.status(401).json(buildErrorResponse({
+                status: 'EntityNotAuthorized',
+                message: err.message,
+                errors: [],
+            }))
+            return;
+        } else if (err.getCode() === 'EntityNotFound') {
+            res.status(404).json(buildErrorResponse({
+                status: 'EntityNotFound',
+                message: err.message,
+            }))
+            return;
+        }
     }
 
     // 4. Fallback error
