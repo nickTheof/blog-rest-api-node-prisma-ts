@@ -1,30 +1,41 @@
 import prisma from '../prisma/client';
-import {CategorySchema} from "../schemas/category.schema";
+import {CategorySchema, PaginationQuery} from "../types/zod-schemas.types";
+import {Category} from "@prisma/client";
 
-export const getAll = async () => {
+const getAll = async (): Promise<Category[]> => {
     return prisma.category.findMany();
 }
 
-export const getAllPaginated = async (page: number, pageSize: number) => {
-    return prisma.category.findMany({skip: (page - 1) * pageSize, take: pageSize});
+const getAllPaginated =  async (query: PaginationQuery): Promise<Category[]> => {
+    return prisma.category.findMany({skip: (query.page - 1) * query.limit, take: query.limit});
 }
 
-export const countAll = async () => {
+const countAll = async (): Promise<number> => {
     return prisma.category.count();
 }
 
-export const getById = async(id: number) => {
-    return prisma.category.findUniqueOrThrow({where: {id}});
+const getById = async(id: number): Promise<Category | null> => {
+    return prisma.category.findUnique({where: {id}});
 }
 
-export const create = async(data: CategorySchema) => {
+const create = async(data: CategorySchema): Promise<Category> => {
     return prisma.category.create({data})
 }
 
-export const updateById = async(id: number, data: CategorySchema) => {
+const updateById = async(id: number, data: CategorySchema): Promise<Category> => {
     return prisma.category.update({where: {id}, data});
 }
 
-export const deleteById = async(id: number) => {
+const deleteById = async(id: number): Promise<Category> => {
     return prisma.category.delete({where: {id}});
+}
+
+export default {
+    getAll,
+    getAllPaginated,
+    countAll,
+    getById,
+    create,
+    updateById,
+    deleteById
 }

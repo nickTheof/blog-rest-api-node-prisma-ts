@@ -1,12 +1,12 @@
-import catchAsync from "../utils/catchAsync";
 import {Request, Response, NextFunction} from "express";
-import {create, getAll, getById, deleteById, updateById,  getAllPaginated, countAll} from "../service/category.service";
-import {CategorySchema} from "../schemas/category.schema";
-import {PaginationQuery} from "../schemas/pagination-query.schema";
+import catchAsync from "../utils/catchAsync";
+import categoryService from "../service/category.service";
+import {CategorySchema, PaginationQuery} from "../types/zod-schemas.types";
+import {AppError} from "../utils/AppError";
 
 
-export const getAllCategories = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const data = await getAll();
+const getAllCategories = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const data = await categoryService.getAll();
         return res.status(200).json({
             status: 'success',
             results: data.length,
@@ -15,54 +15,73 @@ export const getAllCategories = catchAsync(async (req: Request, res: Response, n
 })
 
 export const getAllCategoriesPaginated = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const {page, limit} = res.locals.validatedQuery as PaginationQuery;
-    const data = await getAllPaginated(page, limit);
+    const query = res.locals.validatedQuery as PaginationQuery;
+    const data = await categoryService.getAllPaginated(query);
     return res.status(200).json({
         status: 'success',
-        totalItems: await countAll(),
-        totalPages: Math.ceil(data.length / limit),
-        currentPage: page,
-        limit: limit,
+        totalItems: await categoryService.countAll(),
+        totalPages: Math.ceil(data.length / query.limit),
+        currentPage: query.page,
+        limit: query.limit,
         data: data
     })
 })
 
-export const getCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const getCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {id} = req.params;
-    const data = await getById(parseInt(id));
+    const data = await categoryService.getById(parseInt(id));
+    if (!data) {
+        return next(new AppError("EntityNotFound", `Category with id ${id} not found`));
+    }
     return res.status(200).json({
         status: 'success',
         data: data
     })
 })
 
-export const insertCategory = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const insertCategory = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const data: CategorySchema = req.body;
-    const category = await create(data);
+    const category = await categoryService.create(data);
     return res.status(201).json({
         status: "success",
         data: category
     })
 })
 
-export const updateCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const updateCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {id} = req.params;
     const data: CategorySchema = req.body;
-    await getById(parseInt(id));
-    const updatedCategory = await updateById(parseInt(id), data);
+    const category = await categoryService.getById(parseInt(id));
+    if (!category) {
+        return next(new AppError("EntityNotFound", `Category with id ${id} not found`));
+    }
+    const updatedCategory = await categoryService.updateById(parseInt(id), data);
     return res.status(200).json({
         status: "success",
         data: updatedCategory
     })
 })
 
-export const deleteCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    await getById(parseInt(req.params.id));
-    await deleteById(parseInt(req.params.id));
+const deleteCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const {id} = req.params;
+    const category = await categoryService.getById(parseInt(id));
+    if (!category) {
+        return next(new AppError("EntityNotFound", `Category with id ${id} not found`));
+    }
+    await categoryService.deleteById(parseInt(req.params.id));
     return res.status(204).json({
         status: "success",
         data: null
     })
 })
+
+export default {
+    getAllCategories,
+    getAllCategoriesPaginated,
+    getCategoryById,
+    insertCategory,
+    updateCategoryById,
+    deleteCategoryById
+}
 
 
