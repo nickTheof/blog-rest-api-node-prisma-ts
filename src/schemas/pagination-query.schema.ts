@@ -1,7 +1,7 @@
 
 import { z } from 'zod';
 
-export const PaginationQuerySchema = z.object({
+export const paginationQuerySchema = z.object({
     page: z
         .string()
         .default("1")
@@ -17,5 +17,3 @@ export const PaginationQuerySchema = z.object({
             message: "Limit must be a positive integer",
         }),
 }).strict();
-
-export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
