@@ -1,37 +1,38 @@
 import prisma from "../prisma/client";
 import SecUtil from "../utils/SecUtil";
+import {User} from '@prisma/client';
+import {CreateUserSchema, UpdateUserSchema, PaginationQuery} from "../types/zod-schemas.types";
+import {UserForTokenVerification} from "../types/user-auth.types";
 
-import {CreateUserSchema, UpdateUserSchema} from "../schemas/user.schema";
-
-export const getAll = async () => {
+const getAll = async (): Promise<User[]> => {
     return prisma.user.findMany();
 }
 
-export const getAllPaginated = async (page: number, pageSize: number) => {
-    return prisma.user.findMany({skip: (page - 1) * pageSize, take: pageSize})
+const getAllPaginated = async (query: PaginationQuery): Promise<User[]> => {
+    return prisma.user.findMany({skip: (query.page - 1) * query.limit, take: query.limit});
 }
 
-export const getAllActive = async () => {
+const getAllActive = async (): Promise<User[]> => {
     return prisma.user.findMany({where: {isActive: true}});
 }
 
-export const countAll = async () => {
+const countAll = async (): Promise<number> => {
     return prisma.user.count();
 }
 
-export const getById = async (id: bigint) => {
-    return prisma.user.findUniqueOrThrow({where: {id}});
+const getById = async (id: bigint): Promise<User | null> => {
+    return prisma.user.findUnique({where: {id}});
 }
 
-export const getByUuid = async (uuid: string) => {
-    return prisma.user.findUniqueOrThrow({where: {uuid}});
+const getByUuid = async (uuid: string): Promise<User | null> => {
+    return prisma.user.findUnique({where: {uuid}});
 }
 
-export const getByEmail = async (email: string) => {
-    return prisma.user.findUniqueOrThrow({where: {email}});
+const getByEmail = async (email: string): Promise<UserForTokenVerification | null> => {
+    return prisma.user.findUnique({where: {email}, select: {uuid: true, email: true, role: true, isActive: true, password: true}});
 }
 
-export const create = async (data: CreateUserSchema) => {
+const create = async (data: CreateUserSchema): Promise<User> => {
     return prisma.user.create({
         data: {
             ...data,
@@ -40,24 +41,39 @@ export const create = async (data: CreateUserSchema) => {
     });
 }
 
-export const updateById = async (id: bigint, data: UpdateUserSchema) => {
+const updateById = async (id: bigint, data: UpdateUserSchema): Promise<User> => {
     if (data.password) {
         data.password = await SecUtil.hashPassword(data.password);
     }
     return prisma.user.update({where: {id}, data});
 }
 
-export const updateByUuid = async (uuid: string, data: UpdateUserSchema) => {
+const updateByUuid = async (uuid: string, data: UpdateUserSchema): Promise<User> => {
     if (data.password) {
         data.password = await SecUtil.hashPassword(data.password);
     }
     return prisma.user.update({where: {uuid}, data});
 }
 
-export const deleteById = async (id: bigint) => {
+const deleteById = async (id: bigint): Promise<User> => {
     return prisma.user.delete({where: {id}});
 }
 
-export const deleteByUuid = async (uuid: string) => {
+const deleteByUuid = async (uuid: string): Promise<User> => {
     return prisma.user.delete({where: {uuid}});
+}
+
+export default {
+    getAll,
+    getAllPaginated,
+    getAllActive,
+    countAll,
+    getById,
+    getByUuid,
+    getByEmail,
+    create,
+    updateById,
+    updateByUuid,
+    deleteById,
+    deleteByUuid
 }

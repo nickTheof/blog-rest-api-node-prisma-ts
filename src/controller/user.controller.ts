@@ -1,12 +1,12 @@
 import {Request, Response, NextFunction} from 'express';
-import {create, deleteByUuid, getAll, getByUuid, updateByUuid, getAllPaginated, countAll} from "../service/user.service";
-import {CreateUserSchema, UpdateUserSchema} from "../schemas/user.schema";
 import catchAsync from "../utils/catchAsync";
-import {PaginationQuery} from "../schemas/pagination-query.schema";
+import userService from "../service/user.service";
+import {CreateUserSchema, UpdateUserSchema, PaginationQuery} from "../types/zod-schemas.types";
+import {AppError} from "../utils/AppError";
 
 
-export const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const users = await getAll();
+const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const users = await userService.getAll();
     return res.status(200).json({
         status: 'success',
         results: users.length,
@@ -17,15 +17,15 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response, next: 
     })
 })
 
-export const getAllUsersPaginated = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const {page, limit} = res.locals.validatedQuery as PaginationQuery;
-    const users = await getAllPaginated(page, limit);
+const getAllUsersPaginated = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const query = res.locals.validatedQuery as PaginationQuery;
+    const users = await userService.getAllPaginated(query);
     return res.status(200).json({
         status: 'success',
-        totalItems: await countAll(),
-        totalPages: Math.ceil(users.length / limit),
-        currentPage: page,
-        limit: limit,
+        totalItems: await userService.countAll(),
+        totalPages: Math.ceil(users.length / query.limit),
+        currentPage: query.page,
+        limit: query.limit,
         data: users.map(user => ({
             ...user,
             id: user.id.toString(),
@@ -33,9 +33,12 @@ export const getAllUsersPaginated = catchAsync(async (req: Request, res: Respons
     })
 })
 
-export const getUserByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const getUserByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {uuid} = req.params;
-    const user = await getByUuid(uuid);
+    const user = await userService.getByUuid(uuid);
+    if (!user) {
+        return next(new AppError('EntityNotFound', `User with Uuid ${uuid} not found!`));
+    }
     return res.status(200).json({
         status: 'success',
         data: {
@@ -45,9 +48,9 @@ export const getUserByUuid = catchAsync(async (req: Request, res: Response, next
     })
 })
 
-export const insertUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const insertUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const data: CreateUserSchema = req.body;
-    const user = await create(data);
+    const user = await userService.create(data);
     return res.status(201).json({
         status: 'success',
         data: {
@@ -57,11 +60,14 @@ export const insertUser = catchAsync(async (req: Request, res: Response, next: N
     })
 })
 
-export const updateUserByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const updateUserByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {uuid} = req.params;
     const data: UpdateUserSchema = req.body;
-    await getByUuid(uuid);
-    const updatedUser = await updateByUuid(uuid, data);
+    const toUpdate = await userService.getByUuid(uuid);
+    if (!toUpdate) {
+        return next(new AppError('EntityNotFound', `User with Uuid ${uuid} not found!`));
+    }
+    const updatedUser = await userService.updateByUuid(uuid, data);
     return res.status(200).json({
         status: 'success',
         data: {
@@ -71,14 +77,25 @@ export const updateUserByUuid = catchAsync(async (req: Request, res: Response, n
     })
 })
 
-export const deleteUserByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const deleteUserByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {uuid} = req.params;
-    await getByUuid(uuid);
-    await deleteByUuid(uuid);
+    const toDelete = await userService.getByUuid(uuid);
+    if (!toDelete) {
+        return next(new AppError('EntityNotFound', `User with Uuid ${uuid} not found!`));
+    }
+    await userService.deleteByUuid(uuid);
     return res.status(204).json({
         status: 'success',
         data: null
     })
 })
 
+export default {
+    getAllUsers,
+    getAllUsersPaginated,
+    getUserByUuid,
+    insertUser,
+    updateUserByUuid,
+    deleteUserByUuid,
+}
 
