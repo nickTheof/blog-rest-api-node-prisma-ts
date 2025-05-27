@@ -1,35 +1,33 @@
 import {Request, Response, NextFunction} from "express";
+import {Category} from "@prisma/client";
 import catchAsync from "../utils/catchAsync";
 import categoryService from "../service/category.service";
 import {CategorySchema, PaginationQuery} from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
+import {sendPaginatedCategoriesResponse} from "../utils/helpers/response.helpers";
 
 
 const getAllCategories = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const data = await categoryService.getAll();
+    const query = res.locals.validatedQuery as PaginationQuery;
+    if (!query.paginated) {
+        const data: Category[] = await categoryService.getAll();
         return res.status(200).json({
             status: 'success',
             results: data.length,
             data: data
         })
-})
-
-export const getAllCategoriesPaginated = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query = res.locals.validatedQuery as PaginationQuery;
-    const data = await categoryService.getAllPaginated(query);
-    return res.status(200).json({
-        status: 'success',
-        totalItems: await categoryService.countAll(),
-        totalPages: Math.ceil(data.length / query.limit),
-        currentPage: query.page,
-        limit: query.limit,
-        data: data
-    })
+    } else {
+        const [data, totalItems] = await Promise.all([
+            categoryService.getAllPaginated(query),
+            categoryService.countAll()
+        ])
+        return sendPaginatedCategoriesResponse(res, data, query, totalItems);
+    }
 })
 
 const getCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {id} = req.params;
-    const data = await categoryService.getById(parseInt(id));
+    const data: Category | null = await categoryService.getById(parseInt(id));
     if (!data) {
         return next(new AppError("EntityNotFound", `Category with id ${id} not found`));
     }
@@ -41,7 +39,7 @@ const getCategoryById = catchAsync(async (req: Request, res: Response, next: Nex
 
 const insertCategory = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const data: CategorySchema = req.body;
-    const category = await categoryService.create(data);
+    const category: Category = await categoryService.create(data);
     return res.status(201).json({
         status: "success",
         data: category
@@ -51,11 +49,11 @@ const insertCategory = catchAsync(async (req: Request, res: Response, next: Next
 const updateCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {id} = req.params;
     const data: CategorySchema = req.body;
-    const category = await categoryService.getById(parseInt(id));
+    const category: Category | null = await categoryService.getById(parseInt(id));
     if (!category) {
         return next(new AppError("EntityNotFound", `Category with id ${id} not found`));
     }
-    const updatedCategory = await categoryService.updateById(parseInt(id), data);
+    const updatedCategory: Category = await categoryService.updateById(parseInt(id), data);
     return res.status(200).json({
         status: "success",
         data: updatedCategory
@@ -64,7 +62,7 @@ const updateCategoryById = catchAsync(async (req: Request, res: Response, next: 
 
 const deleteCategoryById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {id} = req.params;
-    const category = await categoryService.getById(parseInt(id));
+    const category: Category | null = await categoryService.getById(parseInt(id));
     if (!category) {
         return next(new AppError("EntityNotFound", `Category with id ${id} not found`));
     }
@@ -77,7 +75,6 @@ const deleteCategoryById = catchAsync(async (req: Request, res: Response, next: 
 
 export default {
     getAllCategories,
-    getAllCategoriesPaginated,
     getCategoryById,
     insertCategory,
     updateCategoryById,
