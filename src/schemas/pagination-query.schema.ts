@@ -2,6 +2,7 @@
 import { z } from 'zod';
 
 export const paginationQuerySchema = z.object({
+    paginated: z.string().default("false").transform(val => val === "true"),
     page: z
         .string()
         .default("1")
