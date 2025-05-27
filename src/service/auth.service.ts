@@ -4,6 +4,8 @@ import userService from "./user.service";
 import SecUtil from "../utils/SecUtil";
 import {LoginDTOSchema, RegisterDTOSchema} from "../types/zod-schemas.types";
 import {UserTokenPayload, UserForTokenVerification, VerifyTokenResponse} from "../types/user-auth.types";
+import {formatUsers} from "../utils/helpers/response.helpers";
+import {User} from "@prisma/client";
 
 const generateAccessToken = (user: UserTokenPayload): string => {
     const secret: jwt.Secret = config.JSONWEBTOKEN_SECRET;
@@ -60,16 +62,13 @@ const loginUser = async (loginDto: LoginDTOSchema): Promise<{ status: string, da
 }
 
 const registerUser = async (data: RegisterDTOSchema) => {
-    const user = await userService.create({
+    const user: User = await userService.create({
         email: data.email,
         password: data.password,
     });
     return {
         status: 'success',
-        data: {
-            ...user,
-            id: user.id.toString(),
-        }
+        data: formatUsers([user])[0]
     }
 }
 
