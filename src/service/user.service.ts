@@ -63,6 +63,17 @@ const deleteByUuid = async (uuid: string): Promise<User> => {
     return prisma.user.delete({where: {uuid}});
 }
 
+// softly delete a user
+const deleteSoftByUuid = async(uuid: string): Promise<User> => {
+    return prisma.user.update({
+        where: {uuid},
+        data: {
+            isActive: false,
+            deletedAt: new Date()
+        }
+    });
+};
+
 export default {
     getAll,
     getAllPaginated,
@@ -75,5 +86,6 @@ export default {
     updateById,
     updateByUuid,
     deleteById,
-    deleteByUuid
+    deleteByUuid,
+    deleteSoftByUuid
 }
