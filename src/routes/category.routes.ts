@@ -4,25 +4,22 @@ import {validateBody, validateQuery} from "../middlewares/validate.middleware";
 import {verifyRoles, verifyToken} from "../middlewares/auth.middleware";
 import {categorySchema} from "../schemas/category.schema";
 import {paginationQuerySchema} from "../schemas/pagination-query.schema";
-
+import {Role} from "@prisma/client";
 
 const router: Router = Router();
 
-// All routes require authentication token. Insert - Update - Delete actions require ADMIN OR EDITOR authorization
+// All routes below require authentication
 router.use (verifyToken)
-router.get("/", categoryController.getAllCategories)
-router.post("/",
-    verifyRoles("ADMIN", "EDITOR"),
-    validateBody(categorySchema),
-    categoryController.insertCategory);
-
-router.get("/paginated",
-    validateQuery(paginationQuerySchema),
-    categoryController.getAllCategoriesPaginated);
+router.route("/")
+    .get(validateQuery(paginationQuerySchema), categoryController.getAllCategories)
+    .post(verifyRoles(Role.ADMIN, Role.EDITOR),
+        validateBody(categorySchema),
+        categoryController.insertCategory);
 
 router.get("/:id", categoryController.getCategoryById)
 
-router.use(verifyRoles("ADMIN", "EDITOR"))
+// Only ADMIN - EDITOR users can access the following routes
+router.use(verifyRoles(Role.ADMIN, Role.EDITOR))
 router.route("/:id")
     .patch(validateBody(categorySchema), categoryController.updateCategoryById)
     .delete(categoryController.deleteCategoryById);
