@@ -8,7 +8,7 @@ import {
     formatUsers, sendPaginatedResponse,
 } from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
-import {AuthResponse} from "../middlewares/auth.middleware";
+import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
 
 

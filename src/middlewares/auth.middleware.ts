@@ -1,18 +1,14 @@
+import {Request, NextFunction} from "express";
 import authService from "../service/auth.service";
-import {Request, Response, NextFunction} from "express";
-import {UserTokenPayload} from "../types/user-auth.types";
 import {AppError} from "../utils/AppError";
+import {UserTokenPayload} from "../types/user-auth.types";
 import {Role} from "@prisma/client";
-
-type MyLocals = {
-    user: UserTokenPayload;
-}
-export type AuthResponse = Response<any, MyLocals>
+import {AuthResponse} from "../types/user-auth.types";
 
 export const verifyToken = async (req: Request, res: AuthResponse, next: NextFunction): Promise<void> => {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) {
+    const authHeader: string| undefined = req.headers.authorization;
+    const token: string| undefined = authHeader && authHeader.split(' ')[1];
+    if (!token) {
         return next(new AppError("EntityNotAuthorized",'No token provided'));
     }
     const payload = authService.verifyAccessToken(token);

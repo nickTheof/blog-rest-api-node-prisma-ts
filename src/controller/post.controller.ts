@@ -4,7 +4,7 @@ import {Request, Response, NextFunction} from "express";
 import {PostCreateSchema, PostUpdateSchema, PaginationQuery} from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
 import {Post} from "@prisma/client";
-import {AuthResponse} from "../middlewares/auth.middleware";
+import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
 import {
     formatPosts,

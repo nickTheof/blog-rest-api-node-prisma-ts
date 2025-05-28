@@ -1,7 +1,7 @@
 import profileService from "../service/profile.service";
 import catchAsync from "../utils/catchAsync";
 import {Request, Response, NextFunction} from "express";
-import {Profile, User} from "@prisma/client";
+import {User} from "@prisma/client";
 import {PaginationQuery, ProfileCreateSchema} from "../types/zod-schemas.types";
 import {
     formatProfiles,
@@ -11,7 +11,7 @@ import {
 } from "../utils/helpers/response.helpers";
 import {AppError} from "../utils/AppError";
 import userService from "../service/user.service";
-import {AuthResponse} from "../middlewares/auth.middleware";
+import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
 
 const getAllProfiles = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
