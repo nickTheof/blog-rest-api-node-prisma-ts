@@ -1,6 +1,7 @@
+import {Role} from "@prisma/client";
 export type UserTokenPayload = {
     email: string;
-    role: ('USER' | 'EDITOR' | 'ADMIN');
+    role: Role;
     isActive: boolean;
     uuid: string;
 }
