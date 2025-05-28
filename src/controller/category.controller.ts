@@ -4,7 +4,9 @@ import catchAsync from "../utils/catchAsync";
 import categoryService from "../service/category.service";
 import {CategorySchema, PaginationQuery} from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
-import {sendPaginatedCategoriesResponse} from "../utils/helpers/response.helpers";
+import {
+    sendPaginatedResponse
+} from "../utils/helpers/response.helpers";
 
 
 const getAllCategories = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -21,7 +23,7 @@ const getAllCategories = catchAsync(async (req: Request, res: Response, next: Ne
             categoryService.getAllPaginated(query),
             categoryService.countAll()
         ])
-        return sendPaginatedCategoriesResponse(res, data, query, totalItems);
+        return sendPaginatedResponse(res, data, query, totalItems);
     }
 })
 

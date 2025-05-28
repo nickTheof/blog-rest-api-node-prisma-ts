@@ -6,7 +6,11 @@ import {AppError} from "../utils/AppError";
 import {Post} from "@prisma/client";
 import {AuthResponse} from "../middlewares/auth.middleware";
 import {UserTokenPayload} from "../types/user-auth.types";
-import {formatPosts, sendPaginatedPostsResponse} from "../utils/helpers/response.helpers";
+import {
+    formatPosts,
+    FormattedPaginatedData,
+    sendPaginatedResponse
+} from "../utils/helpers/response.helpers";
 
 const getAllPosts = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query = res.locals.validatedQuery as PaginationQuery;
@@ -20,7 +24,8 @@ const getAllPosts = catchAsync(async (req: Request, res: Response, next: NextFun
     } else {
         const data: Post[] = await postService.getAllPaginated(query);
         const totalItems: number = await postService.countAll();
-        return sendPaginatedPostsResponse(res, data, query, totalItems);
+        const dataFormatted: FormattedPaginatedData = formatPosts(data);
+        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
     }
 })
 
@@ -39,7 +44,8 @@ const getAllUserPosts = catchAsync(async (req: Request, res: Response, next: Nex
     } else {
         const data: Post[] = await postService.getAllUserPostsPaginated(user.uuid, query);
         const totalItems: number = await postService.countAllUserPosts(user.uuid);
-        return sendPaginatedPostsResponse(res, data, query, totalItems);
+        const dataFormatted: FormattedPaginatedData = formatPosts(data);
+        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
     }
 
 })
@@ -57,7 +63,8 @@ const getAllUserPostsByUuid = catchAsync(async (req: Request, res: Response, nex
     } else {
         const data: Post[] = await postService.getAllUserPostsPaginated(uuid, query);
         const totalItems: number = await postService.countAllUserPosts(uuid);
-        return sendPaginatedPostsResponse(res, data, query, totalItems);
+        const dataFormatted: FormattedPaginatedData = formatPosts(data);
+        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
     }
 })
 

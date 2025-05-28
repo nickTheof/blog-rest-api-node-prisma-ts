@@ -3,7 +3,10 @@ import catchAsync from "../utils/catchAsync";
 import userService from "../service/user.service";
 import {CreateUserSchema, UpdateUserSchema, PaginationQuery} from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
-import {formatUsers, sendPaginatedUsersResponse} from "../utils/helpers/response.helpers";
+import {
+    FormattedPaginatedData,
+    formatUsers, sendPaginatedResponse,
+} from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
 import {AuthResponse} from "../middlewares/auth.middleware";
 import {UserTokenPayload} from "../types/user-auth.types";
@@ -23,7 +26,8 @@ const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFun
             userService.getAllPaginated(query),
             userService.countAll()
         ]);
-        return sendPaginatedUsersResponse(res, users, query, totalItems);
+        const dataFormatted: FormattedPaginatedData = formatUsers(users);
+        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
     }
 })
 

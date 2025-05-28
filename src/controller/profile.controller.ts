@@ -3,7 +3,12 @@ import catchAsync from "../utils/catchAsync";
 import {Request, Response, NextFunction} from "express";
 import {Profile, User} from "@prisma/client";
 import {PaginationQuery, ProfileCreateSchema} from "../types/zod-schemas.types";
-import {formatProfiles, ProfileWithUser, sendPaginatedProfilesResponse} from "../utils/helpers/response.helpers";
+import {
+    formatProfiles,
+    FormattedPaginatedData,
+    ProfileWithUser,
+    sendPaginatedResponse
+} from "../utils/helpers/response.helpers";
 import {AppError} from "../utils/AppError";
 import userService from "../service/user.service";
 import {AuthResponse} from "../middlewares/auth.middleware";
@@ -23,7 +28,8 @@ const getAllProfiles = catchAsync(async (req: Request, res: Response, next: Next
             profileService.getAllPaginated(query),
             profileService.countAll()
         ])
-        return sendPaginatedProfilesResponse(res, profiles, query, totalItems);
+        const dataFormatted: FormattedPaginatedData = formatProfiles(profiles);
+        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
     }
 })
 
