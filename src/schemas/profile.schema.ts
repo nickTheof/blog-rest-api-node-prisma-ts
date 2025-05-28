@@ -9,4 +9,11 @@ const profileCreateSchema = z.object({
 
 const profileUpdateSchema = profileCreateSchema.partial();
 
-export {profileCreateSchema, profileUpdateSchema};
+const profileParamsSchema = z.object({
+    id: z.string().transform((val) => parseInt(val, 10))
+        .refine((val) => Number.isInteger(val) && val > 0, {
+            message: "Profile id must be a positive integer",
+        }),
+})
+
+export {profileCreateSchema, profileUpdateSchema, profileParamsSchema};
