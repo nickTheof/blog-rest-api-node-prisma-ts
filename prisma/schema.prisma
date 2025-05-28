@@ -75,7 +75,7 @@ model Category {
 model Comment {
   id        BigInt   @id @default(autoincrement())
   title     String
-  uuid      String   @default(uuid()) @db.Char(36)
+  uuid      String   @unique @default(uuid()) @db.Char(36)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   post      Post     @relation(fields: [postId], references: [id])
