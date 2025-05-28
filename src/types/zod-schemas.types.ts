@@ -4,6 +4,7 @@ import {paginationQuerySchema} from "../schemas/pagination-query.schema";
 import {categorySchema} from "../schemas/category.schema";
 import {postCreateSchema, postUpdateSchema} from "../schemas/post.schema";
 import {profileCreateSchema, profileUpdateSchema} from "../schemas/profile.schema";
+import {commentCreateSchema, commentUpdateSchema} from "../schemas/comment.schema";
 
 export type CreateUserSchema = z.infer<typeof createUserSchema>;
 export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
@@ -15,3 +16,5 @@ export type PostCreateSchema = z.infer<typeof postCreateSchema>;
 export type PostUpdateSchema = z.infer<typeof postUpdateSchema>;
 export type ProfileCreateSchema = z.infer<typeof profileCreateSchema>;
 export type ProfileUpdateSchema = z.infer<typeof profileUpdateSchema>;
+export type CommentCreateSchema = z.infer<typeof commentCreateSchema>;
+export type CommentUpdateSchema = z.infer<typeof commentUpdateSchema>;
