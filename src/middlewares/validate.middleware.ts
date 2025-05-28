@@ -21,3 +21,13 @@ export const validateQuery =
     }
 }
 
+export const validateParams =
+    (schema: z.Schema) => (req: Request, res: Response, next: NextFunction) => {
+        try {
+            res.locals.validatedParams = schema.parse(req.params);
+            next()
+        } catch (err) {
+            next(err)
+        }
+    }
+
