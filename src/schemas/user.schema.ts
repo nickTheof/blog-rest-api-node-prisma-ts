@@ -16,20 +16,7 @@ export const createUserSchema = z.object({
     role: z.nativeEnum(Role).optional()
 })
 
-export const updateUserSchema = z.object({
-    email: z.string().email("Email has not valid format").optional(),
-    password: z.string().min(8).refine((val) => /[a-z]/.test(val), {
-        message: 'Must contain lowercase',
-    }).refine((val) => /[A-Z]/.test(val), {
-        message: 'Must contain uppercase',
-    }).refine((val) => /\d/.test(val), {
-        message: 'Must contain number',
-    }).refine((val) => /[!@#$%^&*]/.test(val), {
-        message: 'Must contain special character',
-    }).optional(),
-    isActive: z.boolean().default(true).optional(),
-    role: z.nativeEnum(Role).optional()
-})
+export const updateUserSchema = createUserSchema.partial();
 
 export const loginDTOSchema = z.object({
     email: z.string().email("Email has not valid format"),
