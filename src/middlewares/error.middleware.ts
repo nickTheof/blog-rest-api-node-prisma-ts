@@ -77,6 +77,7 @@ export function errorHandler(
         return;
     }
 
+    // 4. Custom errors
     if (err instanceof AppError) {
         if (err.getCode() === 'EntityNotAuthorized') {
             res.status(401).json(buildErrorResponse({
@@ -94,7 +95,7 @@ export function errorHandler(
         }
     }
 
-    // 4. Fallback error
+    // 5. Fallback error
     logger.error(`[UNKNOWN] ${req.method} ${req.url}`, {
         error: err instanceof Error ? err.stack : err,
     });
