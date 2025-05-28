@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes";
 import categoryRoutes from "./routes/category.routes";
 import postRoutes from "./routes/post.routes";
 import profileRoutes from "./routes/profile.routes";
+import commentRoutes from "./routes/comment.routes";
 import {errorHandler} from "./middlewares/error.middleware";
 import {AppError} from "./utils/AppError";
 import config from "./config/config";
@@ -49,6 +50,7 @@ app.use("/api/v1/users", userRoutes)
 app.use("/api/v1/categories", categoryRoutes)
 app.use("/api/v1/posts", postRoutes)
 app.use("/api/v1/profiles", profileRoutes)
+app.use("/api/v1/comments", commentRoutes)
 
 app.all("/{*splat}", (req, res, next) => {
     next(new AppError(`EntityNotFound`, "Can't find the ${req.originalUrl} on the server"));

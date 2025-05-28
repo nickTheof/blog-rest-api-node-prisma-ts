@@ -1,6 +1,6 @@
 import prisma from "../prisma/client";
 import {Comment} from "@prisma/client";
-import {CommentCreateSchema, PaginationQuery} from "../types/zod-schemas.types";
+import {CommentCreateSchema, CommentUpdateSchema, PaginationQuery} from "../types/zod-schemas.types";
 import {CommentWithAuthor, CommentWithAuthorAndPost, CommentWithPost} from "../controller/comment.controller";
 
 const getAll = (): Promise<CommentWithAuthorAndPost[]> => {
@@ -111,10 +111,14 @@ const getById = (id: bigint): Promise<Comment | null> => {
     })
 }
 
-const getByUuid = (uuid: string): Promise<Comment | null> => {
+const getByUuid = (uuid: string): Promise<CommentWithAuthorAndPost | null> => {
     return prisma.comment.findUnique({
         where: {
             uuid: uuid
+        },
+        include: {
+            author: true,
+            post: true,
         }
     })
 }
@@ -141,12 +145,16 @@ const create = (userUuid: string, postUuid: string, data: CommentCreateSchema): 
     })
 }
 
-const update = (id: bigint, data: Comment): Promise<Comment> => {
+const updateByUuid = (uuid: string, data: CommentUpdateSchema): Promise<CommentWithAuthorAndPost> => {
     return prisma.comment.update({
         where: {
-            id: id
+            uuid: uuid
         },
-        data: data
+        data: data,
+        include: {
+            author: true,
+            post: true,
+        }
     })
 }
 
@@ -179,7 +187,7 @@ export default {
     getById,
     getByUuid,
     create,
-    update,
+    updateByUuid,
     deleteById,
     deleteByUuid
 }

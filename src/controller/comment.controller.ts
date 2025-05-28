@@ -1,6 +1,6 @@
 import catchAsync from "../utils/catchAsync";
 import {Request, Response, NextFunction} from "express";
-import {CommentCreateSchema, PaginationQuery} from "../types/zod-schemas.types";
+import {CommentCreateSchema, CommentUpdateSchema, PaginationQuery} from "../types/zod-schemas.types";
 import {AuthResponse, UserTokenPayload} from "../types/user-auth.types";
 import commentService from "../service/comment.service";
 import userService from "../service/user.service";
@@ -8,6 +8,7 @@ import postService from "../service/post.service";
 import {AppError} from "../utils/AppError";
 import { Post, Prisma, User} from "@prisma/client";
 import {
+    formatComment,
     formatComments,
     formatCommentsWithAuthor, formatCommentsWithPost, FormattedCommentWithAuthor, FormattedCommentWithPost,
     sendPaginatedResponse
@@ -49,6 +50,18 @@ const getAllComments = catchAsync(async (req: Request, res: Response, next: Next
         const formattedData = formatComments(data);
         return sendPaginatedResponse(res, formattedData, query, totalItems);
     }
+})
+
+const getCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const {uuid} = req.params;
+    const data: CommentWithAuthorAndPost | null = await commentService.getByUuid(uuid);
+    if (!data) {
+        return next(new AppError("EntityNotFound", `Comment with uuid ${uuid} not found`));
+    }
+    return res.status(200).json({
+        status: 'success',
+        data: formatComment(data)
+    })
 })
 
 const getAllCommentsByPostUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -99,7 +112,34 @@ const createComment = catchAsync(async (req: Request, res: Response, next: NextF
 
     return res.status(201).json({
         status: 'success',
-        data: formatComments([newComment])[0]
+        data: formatComment(newComment)
+    })
+})
+
+const updateCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const {uuid} = req.params;
+    const data: CommentUpdateSchema = req.body;
+    const comment: CommentWithAuthorAndPost | null = await commentService.getByUuid(uuid);
+    if (!comment) {
+        return next(new AppError("EntityNotFound", `Comment with uuid ${uuid} not found`));
+    }
+    const updatedComment: CommentWithAuthorAndPost = await commentService.updateByUuid(uuid, data);
+    return res.status(200).json({
+        status: 'success',
+        data: formatComment(updatedComment)
+    })
+})
+
+const deleteCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const {uuid} = req.params;
+    const comment: CommentWithAuthorAndPost | null = await commentService.getByUuid(uuid);
+    if (!comment) {
+        return next(new AppError("EntityNotFound", `Comment with uuid ${uuid} not found`));
+    }
+    await commentService.deleteByUuid(uuid);
+    return res.status(204).json({
+        status: 'success',
+        data: null
     })
 })
 
@@ -121,5 +161,8 @@ export default {
     getAllComments,
     getAllCommentsByPostUuid,
     getAllCommentsByUserUuid,
-    createComment
+    getCommentByUuid,
+    createComment,
+    deleteCommentByUuid,
+    updateCommentByUuid
 }
