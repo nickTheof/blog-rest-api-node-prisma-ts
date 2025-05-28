@@ -1,5 +1,5 @@
-import {Category, Post, Prisma, Profile, User} from "@prisma/client";
 import {Response} from "express";
+import {Category, Post, Prisma, User} from "@prisma/client";
 import {PaginationQuery} from "../../types/zod-schemas.types";
 
 export type ProfileWithUser = Prisma.ProfileGetPayload<{
@@ -8,7 +8,24 @@ export type ProfileWithUser = Prisma.ProfileGetPayload<{
     };
 }>;
 
-export const formatPosts = (post: Post[]) => {
+export type FormattedPost = Omit<Post, 'id' | 'authorId'> & {
+    id: string;
+    authorId: string;
+}
+
+export type FormattedUser = Omit<User, 'id'> & {
+    id: string;
+}
+
+export type FormattedProfile = Omit<ProfileWithUser, 'id' | 'userId' | 'user'> & {
+    id: string;
+    userId: string;
+    user: FormattedUser;
+}
+
+export type FormattedPaginatedData = FormattedProfile[] | FormattedPost[] | FormattedUser[] | Category[];
+
+export const formatPosts = (post: Post[]): FormattedPost[] => {
     return post.map(post => ({
         ...post,
         id: post.id.toString(),
@@ -16,18 +33,7 @@ export const formatPosts = (post: Post[]) => {
     }))
 }
 
-export const sendPaginatedPostsResponse = (res: Response, data: Post[], query: PaginationQuery, totalItems: number) => {
-    return res.status(200).json({
-        status: 'success',
-        totalItems: totalItems,
-        totalPages: Math.ceil(totalItems / query.limit),
-        currentPage: query.page,
-        limit: query.limit,
-        data: formatPosts(data)
-    })
-}
-
-export const formatUsers = (users: User[]) => {
+export const formatUsers = (users: User[]): FormattedUser[] => {
     return users.map(user => {
         return {
             ...user,
@@ -36,29 +42,8 @@ export const formatUsers = (users: User[]) => {
     })
 }
 
-export const sendPaginatedUsersResponse = (res: Response, data: User[], query: PaginationQuery, totalItems: number) => {
-    return res.status(200).json({
-        status: 'success',
-        totalItems: totalItems,
-        totalPages: Math.ceil(totalItems / query.limit),
-        currentPage: query.page,
-        limit: query.limit,
-        data: formatUsers(data)
-    })
-}
 
-export const sendPaginatedCategoriesResponse = (res: Response, data: Category[], query: PaginationQuery, totalItems: number) => {
-    return res.status(200).json({
-        status: 'success',
-        totalItems: totalItems,
-        totalPages: Math.ceil(totalItems / query.limit),
-        currentPage: query.page,
-        limit: query.limit,
-        data: data
-    })
-}
-
-export const formatProfiles = (profiles: ProfileWithUser[]) => {
+export const formatProfiles = (profiles: ProfileWithUser[]): FormattedProfile[] => {
     return profiles.map(profile => {
         return {
             ...profile,
@@ -72,13 +57,13 @@ export const formatProfiles = (profiles: ProfileWithUser[]) => {
     })
 }
 
-export const sendPaginatedProfilesResponse = (res: Response, data: ProfileWithUser[], query: PaginationQuery, totalItems: number) => {
+export const sendPaginatedResponse = (res: Response, data: FormattedPaginatedData, query: PaginationQuery, totalItems: number) => {
     return res.status(200).json({
         status: 'success',
         totalItems: totalItems,
         totalPages: Math.ceil(totalItems / query.limit),
         currentPage: query.page,
         limit: query.limit,
-        data: formatProfiles(data)
+        data: data
     })
 }
