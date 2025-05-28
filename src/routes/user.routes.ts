@@ -1,14 +1,16 @@
 import { Router } from 'express';
 import userController from '../controller/user.controller';
 import postController from "../controller/post.controller";
+import commentController from "../controller/comment.controller";
 import {verifyToken, verifyRoles} from "../middlewares/auth.middleware";
-import {validateBody, validateQuery} from "../middlewares/validate.middleware";
+import {validateBody, validateQuery, validateParams} from "../middlewares/validate.middleware";
 import {createUserSchema, updateUserSchema} from "../schemas/user.schema";
 import {paginationQuerySchema} from "../schemas/pagination-query.schema";
 import {postCreateSchema, postUpdateSchema} from "../schemas/post.schema";
 import {Role} from "@prisma/client";
 import profileController from "../controller/profile.controller";
 import {profileCreateSchema, profileUpdateSchema} from "../schemas/profile.schema";
+import {uuidParamsSchema, doubleUuidParamsSchema} from "../schemas/params-validation.schema";
 
 const router: Router = Router();
 
@@ -26,9 +28,9 @@ router.route("/me/posts")
 
 
 router.route("/me/posts/:uuid")
-    .get(postController.getAuthenticatedUserPostByUuid)
-    .patch(validateBody(postUpdateSchema), postController.updateAuthenticatedUserPost)
-    .delete(postController.authUserDeletePostByUuid);
+    .get(validateParams(uuidParamsSchema), postController.getAuthenticatedUserPostByUuid)
+    .patch(validateParams(uuidParamsSchema), validateBody(postUpdateSchema), postController.updateAuthenticatedUserPost)
+    .delete(validateParams(uuidParamsSchema), postController.authUserDeletePostByUuid);
 
 router.route("/me/profile")
     .get(profileController.getAuthenticatedUserProfile)
@@ -43,14 +45,16 @@ router.route('/')
     .post(validateBody(createUserSchema), userController.insertUser)
 
 router.route('/:uuid')
-    .get(userController.getUserByUuid)
-    .patch(validateBody(updateUserSchema), userController.updateUserByUuid)
-    .delete(userController.deleteUserByUuid)
+    .get(validateParams(uuidParamsSchema), userController.getUserByUuid)
+    .patch(validateParams(uuidParamsSchema), validateBody(updateUserSchema), userController.updateUserByUuid)
+    .delete(validateParams(uuidParamsSchema), userController.deleteUserByUuid)
 
-router.get("/:uuid/posts", validateQuery(paginationQuerySchema), postController.getAllUserPostsByUuid)
+router.get("/:uuid/comments", validateParams(uuidParamsSchema), validateQuery(paginationQuerySchema), commentController.getAllCommentsByUserUuid)
+
+router.get("/:uuid/posts", validateParams(uuidParamsSchema), validateQuery(paginationQuerySchema), postController.getAllUserPostsByUuid)
 router.route("/:uuid/posts/:postUuid")
-    .get(postController.getPostByUserUuidAndPostUuid)
-    .delete(postController.deletePostByUserUuidAndPostUuid)
-    .patch(validateBody(postUpdateSchema), postController.updatePostByUserUuidAndPostUuid);
+    .get(validateParams(doubleUuidParamsSchema), postController.getPostByUserUuidAndPostUuid)
+    .delete(validateParams(doubleUuidParamsSchema), postController.deletePostByUserUuidAndPostUuid)
+    .patch(validateParams(doubleUuidParamsSchema), validateBody(postUpdateSchema), postController.updatePostByUserUuidAndPostUuid);
 
 export default router;
