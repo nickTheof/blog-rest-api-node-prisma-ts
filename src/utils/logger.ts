@@ -48,6 +48,8 @@ const exceptionsLogsFileTransport = new transports.File({
 const rejectionsLogsFileTransport = new transports.File({
     filename: "./logs/rejections.log",
 });
+
+
 if (config.NODE_ENV === "development") {
     logger.add(devConsoleTransport);
 } else if (config.NODE_ENV === "production"){
@@ -55,6 +57,8 @@ if (config.NODE_ENV === "development") {
     logger.add(criticalProdLogsFileTransport);
     logger.add(exceptionsLogsFileTransport);
     logger.add(rejectionsLogsFileTransport);
+    logger.exceptions.handle(exceptionsLogsFileTransport);
+    logger.rejections.handle(rejectionsLogsFileTransport);
 }
 
 export default logger;
