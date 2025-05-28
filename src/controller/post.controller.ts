@@ -7,6 +7,7 @@ import {Post} from "@prisma/client";
 import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
 import {
+    formatPost,
     formatPosts,
     FormattedPaginatedData,
     sendPaginatedResponse
@@ -76,7 +77,7 @@ const getPostByUuid = catchAsync(async (req: Request, res: Response, next: NextF
     }
     return res.status(200).json({
         status: 'success',
-        data: formatPosts([data])[0]
+        data: formatPost(data)
     })
 })
 
@@ -90,7 +91,7 @@ const getAuthenticatedUserPostByUuid = catchAsync(async (req: Request, res: Resp
     }
     return res.status(200).json({
         status: 'success',
-        data: formatPosts([data])[0]
+        data: formatPost(data)
     })
 })
 
@@ -103,7 +104,7 @@ const getPostByUserUuidAndPostUuid = catchAsync(async (req: Request, res: Respon
     }
     return res.status(200).json({
         status: 'success',
-        data: formatPosts([data])[0]
+        data: formatPost(data)
     })
 })
 
@@ -114,7 +115,7 @@ const insertPost = catchAsync(async (req: Request, res: Response, next: NextFunc
     const post: Post = await postService.create(user.uuid, data);
     return res.status(201).json({
         status: 'success',
-        data: formatPosts([post])[0]
+        data: formatPost(post)
     })
 })
 
@@ -128,7 +129,7 @@ const updatePostByUuid = catchAsync(async (req: Request, res: Response, next: Ne
     const updatedPost: Post = await postService.updateByUuid(uuid, data);
     return res.status(200).json({
         status: "success",
-        data: formatPosts([updatedPost])[0]
+        data: formatPost(updatedPost)
     })
 })
 
@@ -144,7 +145,7 @@ const updateAuthenticatedUserPost = catchAsync(async (req: Request, res: Respons
     const updatedPost: Post = await postService.updateByUserUuidAndPostUuid(user.uuid, postUuid, data);
     return res.status(200).json({
         status: "success",
-        data: formatPosts([updatedPost])[0]
+        data: formatPost(updatedPost)
     })
 })
 
@@ -159,7 +160,7 @@ const updatePostByUserUuidAndPostUuid = catchAsync(async (req: Request, res: Res
     const updatedPost: Post = await postService.updateByUserUuidAndPostUuid(userUuid, postUuid, data);
     return res.status(200).json({
         status: "success",
-        data: formatPosts([updatedPost])[0]
+        data: formatPost(updatedPost)
     })
 })
 

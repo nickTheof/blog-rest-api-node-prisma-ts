@@ -4,7 +4,7 @@ import userService from "../service/user.service";
 import {CreateUserSchema, UpdateUserSchema, PaginationQuery} from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
 import {
-    FormattedPaginatedData,
+    FormattedPaginatedData, formatUser,
     formatUsers, sendPaginatedResponse,
 } from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
@@ -39,7 +39,7 @@ const getUserByUuid = catchAsync(async (req: Request, res: Response, next: NextF
     }
     return res.status(200).json({
         status: 'success',
-        data: formatUsers([user])[0]
+        data: formatUser(user)
     })
 })
 
@@ -52,7 +52,7 @@ const getAuthenticatedUser = catchAsync( async(req: Request, res: Response, next
     }
     return res.status(200).json({
         status: 'success',
-        data: formatUsers([currentUser])[0]
+        data: formatUser(currentUser)
     })
 })
 
@@ -61,7 +61,7 @@ const insertUser = catchAsync(async (req: Request, res: Response, next: NextFunc
     const user: User = await userService.create(data);
     return res.status(201).json({
         status: 'success',
-        data: formatUsers([user])[0]
+        data: formatUser(user)
     })
 })
 
@@ -75,7 +75,7 @@ const updateUserByUuid = catchAsync(async (req: Request, res: Response, next: Ne
     const updatedUser: User = await userService.updateByUuid(uuid, data);
     return res.status(200).json({
         status: 'success',
-        data: formatUsers([updatedUser])[0]
+        data: formatUser(updatedUser)
     })
 })
 
@@ -86,7 +86,7 @@ const updateAuthenticatedUser = catchAsync(async (req: Request, res: Response, n
     const updatedUser: User = await userService.updateByUuid(authenticatedUser.uuid, data);
     return res.status(200).json({
         status: 'success',
-        data: formatUsers([updatedUser])[0]
+        data: formatUser(updatedUser)
     })
 })
 

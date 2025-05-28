@@ -48,87 +48,100 @@ export type FormattedCommentWithPost = Omit<CommentWithPost, 'id' | 'userId' | '
 
 export type FormattedPaginatedData = FormattedProfile[] | FormattedPost[] | FormattedUser[] | Category[] | FormattedCommentWithAuthorAndPost[] | FormattedCommentWithAuthor[] | FormattedCommentWithPost[];
 
-export const formatPosts = (post: Post[]): FormattedPost[] => {
-    return post.map(post => ({
+export const formatPost= (post: Post): FormattedPost => {
+    return {
         ...post,
         id: post.id.toString(),
         authorId: post.authorId.toString(),
-    }))
+    }
+}
+
+export const formatUser = (user: User): FormattedUser => {
+    return {
+        ...user,
+        id: user.id.toString()
+    }
+}
+
+export const formatProfile = (profile: ProfileWithUser): FormattedProfile => {
+    return {
+        ...profile,
+        id: profile.id.toString(),
+        userId: profile.userId.toString(),
+        user: {
+            ...profile.user,
+            id: profile.user.id.toString()
+        }
+    }
+}
+
+export const formatComment = (comment: CommentWithAuthorAndPost): FormattedCommentWithAuthorAndPost => {
+    return {
+        ...comment,
+        id: comment.id.toString(),
+        userId: comment.userId.toString(),
+        postId: comment.postId.toString(),
+        author: {
+            ...comment.author,
+            id: comment.author.id.toString(),
+        },
+        post: {
+            ...comment.post,
+            id: comment.post.id.toString(),
+            authorId: comment.post.authorId.toString(),
+        }
+    }
+}
+
+export const formatCommentWithAuthor = (comment: CommentWithAuthor): FormattedCommentWithAuthor => {
+    return {
+        ...comment,
+        id: comment.id.toString(),
+        userId: comment.userId.toString(),
+        postId: comment.postId.toString(),
+        author: {
+            ...comment.author,
+            id: comment.author.id.toString(),
+        }
+    }
+}
+
+export const formatCommentWithPost = (comment: CommentWithPost): FormattedCommentWithPost => {
+    return {
+        ...comment,
+        id: comment.id.toString(),
+        userId: comment.userId.toString(),
+        postId: comment.postId.toString(),
+        post: {
+            ...comment.post,
+            id: comment.post.id.toString(),
+            authorId: comment.post.authorId.toString(),
+        }
+    }
 }
 
 export const formatUsers = (users: User[]): FormattedUser[] => {
-    return users.map(user => {
-        return {
-            ...user,
-            id: user.id.toString()
-        }
-    })
+    return users.map(user => formatUser(user));
 }
 
+export const formatPosts = (post: Post[]): FormattedPost[] => {
+    return post.map(post => formatPost(post));
+}
 
 export const formatProfiles = (profiles: ProfileWithUser[]): FormattedProfile[] => {
-    return profiles.map(profile => {
-        return {
-            ...profile,
-            id: profile.id.toString(),
-            userId: profile.userId.toString(),
-            user: {
-                ...profile.user,
-                id: profile.user.id.toString()
-            }
-        }
-    })
+    return profiles.map(profile => formatProfile(profile));
 }
 
 export const formatComments = (comments: CommentWithAuthorAndPost[]): FormattedCommentWithAuthorAndPost[] => {
-    return comments.map(comment => {
-        return {
-            ...comment,
-            userId: comment.userId.toString(),
-            postId: comment.postId.toString(),
-            id: comment.id.toString(),
-            author: {
-                ...comment.author,
-                id: comment.author.id.toString(),
-            },
-            post: {
-                ...comment.post,
-                id: comment.post.id.toString(),
-                authorId: comment.post.authorId.toString(),
-            }
-        }
-    })
+    return comments.map(comment => formatComment(comment));
 }
 
 export const formatCommentsWithAuthor = (comments: CommentWithAuthor[]): FormattedCommentWithAuthor[] => {
-    return comments.map(comment => {
-        return {
-            ...comment,
-            userId: comment.userId.toString(),
-            postId: comment.postId.toString(),
-            id: comment.id.toString(),
-            author: {
-                ...comment.author,
-                id: comment.author.id.toString(),
-            }
-        }
-    })
+    return comments.map(comment => formatCommentWithAuthor(comment));
 }
 
 export const formatCommentsWithPost = (comments: CommentWithPost[]): FormattedCommentWithPost[] => {
-    return comments.map(comment => {
-        return {
-            ...comment,
-            userId: comment.userId.toString(),
-            postId: comment.postId.toString(),
-            id: comment.id.toString(),
-            post: {
-                ...comment.post,
-                id: comment.post.id.toString(),
-                authorId: comment.post.authorId.toString(),
-            }
-        }
-    })
+    return comments.map(comment => formatCommentWithPost(comment));
 }
 
 export const sendPaginatedResponse = (res: Response, data: FormattedPaginatedData, query: PaginationQuery, totalItems: number) => {

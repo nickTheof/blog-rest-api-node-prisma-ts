@@ -4,6 +4,7 @@ import {Request, Response, NextFunction} from "express";
 import {User} from "@prisma/client";
 import {PaginationQuery, ProfileCreateSchema} from "../types/zod-schemas.types";
 import {
+    formatProfile,
     formatProfiles,
     FormattedPaginatedData,
     ProfileWithUser,
@@ -45,7 +46,7 @@ const getProfileByUserUuid = catchAsync(async (req: Request, res: Response, next
     }
     return res.status(200).json({
         status: 'success',
-        data: formatProfiles([profile])[0]
+        data: formatProfile(profile)
     })
 })
 
@@ -57,7 +58,7 @@ const getProfileById = catchAsync(async (req: Request, res: Response, next: Next
     }
     return res.status(200).json({
         status: 'success',
-        data: formatProfiles([profile])[0]
+        data: formatProfile(profile)
     })
 })
 
@@ -65,7 +66,7 @@ const getAuthenticatedUserProfile = catchAsync(async (req: Request, res: Respons
     const {profile} = await getAuthenticatedUserAndProfile(res, next);
     return res.status(200).json({
         status: 'success',
-        data: formatProfiles([profile])[0]
+        data: formatProfile(profile)
     })
 })
 
@@ -89,7 +90,7 @@ const createAuthenticatedUserProfile = catchAsync(async (req: Request, res: Resp
     const profile: ProfileWithUser = await profileService.create(user.uuid, data);
     return res.status(201).json({
         status: 'success',
-        data: formatProfiles([profile])[0]
+        data: formatProfile(profile)
     })
 })
 
@@ -107,7 +108,7 @@ const updateAuthenticatedUserProfile = catchAsync(async (req: Request, res: Resp
     const updatedProfile: ProfileWithUser = await profileService.update(user.id, req.body);
     return res.status(200).json({
         status: 'success',
-        data: formatProfiles([updatedProfile])[0]
+        data: formatProfile(updatedProfile)
     })
 })
 
@@ -120,7 +121,7 @@ const updateProfileById = catchAsync(async (req: Request, res: Response, next: N
     const updatedProfile: ProfileWithUser = await profileService.updateById(profile.id, req.body);
     return res.status(200).json({
         status: 'success',
-        data: formatProfiles([updatedProfile])[0]
+        data: formatProfile(updatedProfile)
     })
 })
 
