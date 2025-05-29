@@ -41,3 +41,15 @@ export const generateFilterPostUuidWhere = (uuid?: string ): Prisma.PostWhereInp
     }
     return where;
 }
+
+type activeUsersWhere = {
+    isActive?: boolean
+}
+
+export const generateFilterActiveUsersWhere = (isActive?: boolean): activeUsersWhere => {
+    const where: activeUsersWhere = {};
+    if (isActive) {
+        where.isActive = isActive;
+    }
+    return where;
+}
