@@ -4,7 +4,7 @@ import userService from "../service/user.service";
 import {CreateUserSchema, UpdateUserSchema, PaginationQuery} from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
 import {
-    FormattedPaginatedData, formatUser,
+    FormattedArrayEntityData, formatUser,
     formatUsers, sendPaginatedResponse,
 } from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
@@ -26,7 +26,7 @@ const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFun
             userService.getAllPaginated(query),
             userService.countAll()
         ]);
-        const dataFormatted: FormattedPaginatedData = formatUsers(users);
+        const dataFormatted: FormattedArrayEntityData = formatUsers(users);
         return sendPaginatedResponse(res, dataFormatted, query, totalItems);
     }
 })
