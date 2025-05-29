@@ -1,16 +1,21 @@
 import prisma from "../prisma/client";
 import {PaginationQuery, ProfileCreateSchema, ProfileUpdateSchema} from "../types/zod-schemas.types";
 import {ProfileWithUser} from "../utils/helpers/response.helpers";
+import {generatePaginationQuery} from "../utils/helpers/prisma-predicates.helpers";
+import { Prisma, Profile } from "@prisma/client";
 
-const getAll = () => {
-    return prisma.profile.findMany({
-        include: {
+const getAll = (query: PaginationQuery): Promise<ProfileWithUser[]> => {
+    const paginationArgs: Prisma.ProfileFindManyArgs = generatePaginationQuery(query);
+    const profileInclude: Prisma.ProfileInclude = {
             user: true
-        }
-    });
+    }
+    return prisma.profile.findMany({
+        ...paginationArgs,
+        include: profileInclude
+    })
 }
 
-const getById = (id: bigint) => {
+const getById = (id: bigint): Promise<ProfileWithUser | null> => {
     return prisma.profile.findUnique({
         where: {id},
         include: {
@@ -30,28 +35,25 @@ const getByUserId = (userId: bigint): Promise<ProfileWithUser | null> => {
     })
 }
 
-const getAllPaginated = (query: PaginationQuery) => {
-    return prisma.profile.findMany({
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
+const getByUserUuid = (userUuid: string): Promise<ProfileWithUser | null> => {
+    return prisma.profile.findFirst({
+        where: {
+            user: {
+                uuid: userUuid
+            }
+        },
         include: {
-            user: true
+            user: true,
         }
     })
 }
 
-const countAll = () => {
+const countAll = (): Promise<number> => {
     return prisma.profile.count()
 }
 
-const countAllPaginated = (query: PaginationQuery) => {
-    return prisma.profile.count({
-        skip: (query.page - 1) * query.limit,
-        take: query.limit
-    })
-}
 
-const create = (userUuid: string, data: ProfileCreateSchema) => {
+const create = (userUuid: string, data: ProfileCreateSchema): Promise<ProfileWithUser> => {
     return prisma.profile.create({
         data: {
             ...data,
@@ -67,7 +69,7 @@ const create = (userUuid: string, data: ProfileCreateSchema) => {
     })
 }
 
-const update = (userId: bigint, data: ProfileUpdateSchema) => {
+const update = (userId: bigint, data: ProfileUpdateSchema): Promise<ProfileWithUser> => {
     return prisma.profile.update({
         where: {
             userId: userId
@@ -81,7 +83,7 @@ const update = (userId: bigint, data: ProfileUpdateSchema) => {
     })
 }
 
-const updateById  = (id: bigint, data: ProfileUpdateSchema) => {
+const updateById  = (id: bigint, data: ProfileUpdateSchema): Promise<ProfileWithUser> => {
     return prisma.profile.update({
         where: {
             id: id
@@ -95,7 +97,7 @@ const updateById  = (id: bigint, data: ProfileUpdateSchema) => {
     })
 }
 
-const deleteById = (id: bigint) => {
+const deleteById = (id: bigint): Promise<Profile> => {
     return prisma.profile.delete({
         where: {
             id: id
@@ -103,7 +105,7 @@ const deleteById = (id: bigint) => {
     })
 }
 
-const deleteByUserId = (userId: bigint) => {
+const deleteByUserId = (userId: bigint): Promise<Profile> => {
     return prisma.profile.delete({
         where: {
             userId: userId
@@ -115,9 +117,8 @@ export default {
     getAll,
     getById,
     getByUserId,
-    getAllPaginated,
+    getByUserUuid,
     countAll,
-    countAllPaginated,
     create,
     update,
     updateById,
