@@ -5,13 +5,18 @@ import {validateBody, validateQuery, validateParams} from "../middlewares/valida
 import {paginationQuerySchema} from "../schemas/pagination-query.schema";
 import {postUpdateSchema} from "../schemas/post.schema";
 import commentController from "../controller/comment.controller";
-import {uuidParamsSchema} from "../schemas/params-validation.schema";
+import {doubleUuidCommentParamsSchema, uuidParamsSchema} from "../schemas/params-validation.schema";
+import {commentUpdateSchema} from "../schemas/comment.schema";
 
 const router:Router = Router();
 router.use(verifyToken)
 router.route("/:uuid/comments")
     .get(validateParams(uuidParamsSchema), validateQuery(paginationQuerySchema), commentController.getAllCommentsByPostUuid)
     .post(commentController.createComment)
+
+router.route("/:uuid/comments/:commentUuid")
+    .patch(validateParams(doubleUuidCommentParamsSchema), validateBody(commentUpdateSchema), commentController.updateAuthenticatedUserCommentByUuid)
+    .delete(validateParams(doubleUuidCommentParamsSchema), commentController.deleteAuthenticatedUserCommentByUuid)
 
 // All routes require authentication token. Only users with ADMIN Authorization are eligible for general CRUD actions in the Post model
 router.use(verifyRoles("ADMIN"))

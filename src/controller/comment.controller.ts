@@ -130,6 +130,25 @@ const updateCommentByUuid = catchAsync(async (req: Request, res: Response, next:
     })
 })
 
+const updateAuthenticatedUserCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const authRes = res as AuthResponse;
+    const user: UserTokenPayload = authRes.locals.user;
+    const {commentUuid} = req.params;
+    const data: CommentUpdateSchema = req.body;
+    const comment: CommentWithAuthorAndPost | null = await commentService.getByUuid(commentUuid);
+    if (!comment) {
+        return next(new AppError("EntityNotFound", `Comment with uuid ${commentUuid} not found`));
+    }
+    if (comment.author.uuid !== user.uuid) {
+        return next(new AppError("EntityForbiddenAction", `Comment with uuid ${commentUuid} not found`));
+    }
+    const updatedComment: CommentWithAuthorAndPost = await commentService.updateByUuid(commentUuid, data);
+    return res.status(200).json({
+        status: 'success',
+        data: formatComment(updatedComment)
+    })
+})
+
 const deleteCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {uuid} = req.params;
     const comment: CommentWithAuthorAndPost | null = await commentService.getByUuid(uuid);
@@ -137,6 +156,24 @@ const deleteCommentByUuid = catchAsync(async (req: Request, res: Response, next:
         return next(new AppError("EntityNotFound", `Comment with uuid ${uuid} not found`));
     }
     await commentService.deleteByUuid(uuid);
+    return res.status(204).json({
+        status: 'success',
+        data: null
+    })
+})
+
+const deleteAuthenticatedUserCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const authRes = res as AuthResponse;
+    const user: UserTokenPayload = authRes.locals.user;
+    const {commentUuid} = req.params;
+    const comment: CommentWithAuthorAndPost | null = await commentService.getByUuid(commentUuid);
+    if (!comment) {
+        return next(new AppError("EntityNotFound", `Comment with uuid ${commentUuid} not found`));
+    }
+    if (comment.author.uuid !== user.uuid) {
+        return next(new AppError("EntityForbiddenAction", `Comment with uuid ${commentUuid} not found`));
+    }
+    await commentService.deleteByUuid(commentUuid);
     return res.status(204).json({
         status: 'success',
         data: null
@@ -164,5 +201,7 @@ export default {
     getCommentByUuid,
     createComment,
     deleteCommentByUuid,
-    updateCommentByUuid
+    deleteAuthenticatedUserCommentByUuid,
+    updateCommentByUuid,
+    updateAuthenticatedUserCommentByUuid
 }
