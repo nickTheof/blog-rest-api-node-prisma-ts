@@ -26,5 +26,8 @@ export const filterPostsPaginationQuerySchema = paginationQuerySchema.extend(({
 }))
 
 export const filterUsersPaginationQuerySchema = paginationQuerySchema.extend(({
-    isActive: z.boolean().default(true).optional(),
+    isActive: z
+        .string()
+        .transform((val) => val === "true" || val === "1")
+        .optional()
 }))

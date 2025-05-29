@@ -48,8 +48,9 @@ type activeUsersWhere = {
 
 export const generateFilterActiveUsersWhere = (isActive?: boolean): activeUsersWhere => {
     const where: activeUsersWhere = {};
-    if (isActive) {
-        where.isActive = isActive;
+    if (isActive === undefined) {
+        return where;
     }
+    where.isActive = isActive;
     return where;
 }
