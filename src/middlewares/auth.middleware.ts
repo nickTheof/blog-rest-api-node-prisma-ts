@@ -28,7 +28,7 @@ export const verifyRoles = (...allowedRoles: Role[]) => (req: Request, res: Auth
         return next(new AppError("EntityNotAuthorized",'No user provided'));
     }
     if (!allowedRoles.includes(user.role)) {
-        return next(new AppError("EntityNotAuthorized",'You are not authorized to perform this action'));
+        return next(new AppError("EntityForbiddenAction",'You are not authorized to perform this action'));
     }
     next();
 }

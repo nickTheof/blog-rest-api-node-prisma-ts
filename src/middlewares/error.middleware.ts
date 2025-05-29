@@ -86,6 +86,12 @@ export function errorHandler(
                 errors: [],
             }))
             return;
+        } else if (err.getCode() === 'EntityForbiddenAction') {
+            res.status(403).json(buildErrorResponse({
+                status: 'EntityForbiddenAction',
+                message: err.message,
+            }))
+            return;
         } else if (err.getCode() === 'EntityNotFound') {
             res.status(404).json(buildErrorResponse({
                 status: 'EntityNotFound',
