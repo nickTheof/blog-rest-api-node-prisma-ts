@@ -6,7 +6,7 @@ import {PaginationQuery, ProfileCreateSchema} from "../types/zod-schemas.types";
 import {
     formatProfile,
     formatProfiles,
-    FormattedPaginatedData,
+    FormattedArrayEntityData,
     ProfileWithUser,
     sendPaginatedResponse
 } from "../utils/helpers/response.helpers";
@@ -29,7 +29,7 @@ const getAllProfiles = catchAsync(async (req: Request, res: Response, next: Next
             profileService.getAllPaginated(query),
             profileService.countAll()
         ])
-        const dataFormatted: FormattedPaginatedData = formatProfiles(profiles);
+        const dataFormatted: FormattedArrayEntityData = formatProfiles(profiles);
         return sendPaginatedResponse(res, dataFormatted, query, totalItems);
     }
 })
