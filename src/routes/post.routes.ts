@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {verifyRoles, verifyToken} from "../middlewares/auth.middleware";
 import postController from "../controller/post.controller"
 import {validateBody, validateQuery, validateParams} from "../middlewares/validate.middleware";
-import {paginationQuerySchema} from "../schemas/pagination-query.schema";
+import {filterPostsPaginationQuerySchema, paginationQuerySchema} from "../schemas/pagination-query.schema";
 import {postUpdateSchema} from "../schemas/post.schema";
 import commentController from "../controller/comment.controller";
 import {doubleUuidCommentParamsSchema, uuidParamsSchema} from "../schemas/params-validation.schema";
@@ -21,7 +21,7 @@ router.route("/:uuid/comments/:commentUuid")
 // All routes require authentication token. Only users with ADMIN Authorization are eligible for general CRUD actions in the Post model
 router.use(verifyRoles("ADMIN"))
 
-router.get("/", validateQuery(paginationQuerySchema), postController.getAllPosts);
+router.get("/", validateQuery(filterPostsPaginationQuerySchema), postController.getAllPosts);
 
 router.patch("/:uuid", validateParams(uuidParamsSchema), validateBody(postUpdateSchema), postController.updatePostByUuid);
 

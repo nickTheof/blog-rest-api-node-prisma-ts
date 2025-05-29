@@ -5,7 +5,7 @@ import commentController from "../controller/comment.controller";
 import {verifyToken, verifyRoles} from "../middlewares/auth.middleware";
 import {validateBody, validateQuery, validateParams} from "../middlewares/validate.middleware";
 import {createUserSchema, updateUserSchema} from "../schemas/user.schema";
-import {paginationQuerySchema} from "../schemas/pagination-query.schema";
+import {filterPostsPaginationQuerySchema, paginationQuerySchema} from "../schemas/pagination-query.schema";
 import {postCreateSchema, postUpdateSchema} from "../schemas/post.schema";
 import {Role} from "@prisma/client";
 import profileController from "../controller/profile.controller";
@@ -51,7 +51,7 @@ router.route('/:uuid')
 
 router.get("/:uuid/comments", validateParams(uuidParamsSchema), validateQuery(paginationQuerySchema), commentController.getAllCommentsByUserUuid)
 
-router.get("/:uuid/posts", validateParams(uuidParamsSchema), validateQuery(paginationQuerySchema), postController.getAllUserPostsByUuid)
+router.get("/:uuid/posts", validateParams(uuidParamsSchema), validateQuery(filterPostsPaginationQuerySchema), postController.getAllUserPostsByUuid)
 router.route("/:uuid/posts/:postUuid")
     .get(validateParams(doubleUuidParamsSchema), postController.getPostByUserUuidAndPostUuid)
     .delete(validateParams(doubleUuidParamsSchema), postController.deletePostByUserUuidAndPostUuid)
