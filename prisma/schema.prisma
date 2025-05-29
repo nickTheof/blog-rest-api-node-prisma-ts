@@ -48,11 +48,18 @@ model Profile {
   @@map("profiles")
 }
 
+enum PostStatus {
+  PUBLISHED
+  DRAFT
+  INACTIVE
+  ARCHIVED
+}
+
 model Post {
   id          BigInt     @id @default(autoincrement())
   title       String
   description String
-  published   Boolean    @default(false)
+  status      PostStatus @default(DRAFT)
   uuid        String     @unique @default(uuid()) @db.Char(36)
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
@@ -72,16 +79,24 @@ model Category {
   @@map("categories")
 }
 
+enum CommentStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  DELETED
+}
+
 model Comment {
-  id        BigInt   @id @default(autoincrement())
+  id        BigInt        @id @default(autoincrement())
   title     String
-  uuid      String   @unique @default(uuid()) @db.Char(36)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  post      Post     @relation(fields: [postId], references: [id])
-  postId    BigInt   @map("post_id")
-  author    User     @relation(fields: [userId], references: [id])
-  userId    BigInt   @map("user_id")
+  status    CommentStatus @default(ACTIVE)
+  uuid      String        @unique @default(uuid()) @db.Char(36)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  post      Post          @relation(fields: [postId], references: [id])
+  postId    BigInt        @map("post_id")
+  author    User          @relation(fields: [userId], references: [id])
+  userId    BigInt        @map("user_id")
 
   @@map("comments")
 }
