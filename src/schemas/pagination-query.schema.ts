@@ -24,3 +24,7 @@ export const filterPostsPaginationQuerySchema = paginationQuerySchema.extend(({
     status: z.union([z.nativeEnum(PostStatus), z.array(z.nativeEnum(PostStatus))]).optional()
         .transform(val => val ? (Array.isArray(val) ? val : [val]) : undefined),
 }))
+
+export const filterUsersPaginationQuerySchema = paginationQuerySchema.extend(({
+    isActive: z.boolean().default(true).optional(),
+}))
