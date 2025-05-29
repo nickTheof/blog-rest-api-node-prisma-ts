@@ -46,7 +46,8 @@ export type FormattedCommentWithPost = Omit<CommentWithPost, 'id' | 'userId' | '
     post: FormattedPost;
 }
 
-export type FormattedPaginatedData = FormattedProfile[] | FormattedPost[] | FormattedUser[] | Category[] | FormattedCommentWithAuthorAndPost[] | FormattedCommentWithAuthor[] | FormattedCommentWithPost[];
+export type FormattedEntityData = FormattedPost | FormattedUser | FormattedProfile | Category | FormattedCommentWithAuthorAndPost | FormattedCommentWithAuthor | FormattedCommentWithPost;
+export type FormattedArrayEntityData = FormattedEntityData[];
 
 export const formatPost= (post: Post): FormattedPost => {
     return {
@@ -144,7 +145,7 @@ export const formatCommentsWithPost = (comments: CommentWithPost[]): FormattedCo
     return comments.map(comment => formatCommentWithPost(comment));
 }
 
-export const sendPaginatedResponse = (res: Response, data: FormattedPaginatedData, query: PaginationQuery, totalItems: number) => {
+export const sendPaginatedResponse = (res: Response, data: FormattedArrayEntityData, query: PaginationQuery, totalItems: number) => {
     return res.status(200).json({
         status: 'success',
         totalItems: totalItems,
@@ -154,3 +155,19 @@ export const sendPaginatedResponse = (res: Response, data: FormattedPaginatedDat
         data: data
     })
 }
+
+export const sendSuccessArrayResponse = (res: Response, data: FormattedArrayEntityData) => {
+    return res.status(200).json({
+        status: 'success',
+        results: data.length,
+        data: data
+    })
+}
+
+export const sendSuccessResponse = (res: Response, data: FormattedEntityData | null, status: number=200) => {
+    return res.status(status).json({
+        status: 'success',
+        data: data
+    })
+}
+
