@@ -1,13 +1,17 @@
 import prisma from '../prisma/client';
 import {CategorySchema, PaginationQuery} from "../types/zod-schemas.types";
-import {Category} from "@prisma/client";
+import {Category, Prisma} from "@prisma/client";
+import {generatePaginationQuery} from "../utils/helpers/prisma-predicates.helpers";
 
-const getAll = async (): Promise<Category[]> => {
-    return prisma.category.findMany();
-}
-
-const getAllPaginated =  async (query: PaginationQuery): Promise<Category[]> => {
-    return prisma.category.findMany({skip: (query.page - 1) * query.limit, take: query.limit});
+const getAll = async (query: PaginationQuery): Promise<Category[]> => {
+    const paginationArgs: Prisma.CategoryFindManyArgs = generatePaginationQuery(query);
+    if (!query.paginated) {
+        return prisma.category.findMany();
+    } else {
+        return prisma.category.findMany({
+            ...paginationArgs
+        });
+    }
 }
 
 const countAll = async (): Promise<number> => {
@@ -32,7 +36,6 @@ const deleteById = async(id: number): Promise<Category> => {
 
 export default {
     getAll,
-    getAllPaginated,
     countAll,
     getById,
     create,
