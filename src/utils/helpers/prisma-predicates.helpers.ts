@@ -1,7 +1,12 @@
 import {PaginationQuery} from "../../types/zod-schemas.types";
 import {PostStatus, Prisma} from "@prisma/client";
 
-export const generatePaginationQuery = (query: PaginationQuery): Prisma.PostFindManyArgs => {
+type findManyArgsPagination = {
+    skip?: number,
+    take?: number
+}
+
+export const generatePaginationQuery = (query: PaginationQuery): findManyArgsPagination  => {
     if (!query.paginated) {
         return {};
     } else {
