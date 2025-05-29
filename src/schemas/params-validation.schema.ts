@@ -27,3 +27,10 @@ export const doubleUuidParamsSchema = z.object({
     postUuid: z.string()
         .uuid("Invalid UUID format. Use 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' format."),
 });
+
+export const doubleUuidCommentParamsSchema = z.object({
+    uuid: z.string()
+        .uuid("Invalid UUID format. Use 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' format."),
+    commentUuid: z.string()
+        .uuid("Invalid UUID format. Use 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' format."),
+});
