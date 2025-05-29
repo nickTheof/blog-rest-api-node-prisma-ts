@@ -1,11 +1,15 @@
 import {Request, Response, NextFunction} from 'express';
 import catchAsync from "../utils/catchAsync";
 import userService from "../service/user.service";
-import {CreateUserSchema, UpdateUserSchema, PaginationQuery} from "../types/zod-schemas.types";
+import {
+    CreateUserSchema,
+    UpdateUserSchema,
+    FilterUsersPaginationQuery
+} from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
 import {
-    FormattedArrayEntityData, formatUser,
-    formatUsers, sendPaginatedResponse,
+    FormattedArrayEntityData, FormattedEntityData, formatUser,
+    formatUsers, sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse,
 } from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
 import {AuthResponse} from "../types/user-auth.types";
@@ -13,21 +17,14 @@ import {UserTokenPayload} from "../types/user-auth.types";
 
 
 const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query = res.locals.validatedQuery as PaginationQuery;
+    const query = res.locals.validatedQuery as FilterUsersPaginationQuery;
+    const users: User[] = await userService.getAll(query);
+    const formattedUsers: FormattedArrayEntityData = formatUsers(users);
     if (!query.paginated) {
-        const users: User[] = await userService.getAll();
-        return res.status(200).json({
-            status: 'success',
-            results: users.length,
-            data: formatUsers(users)
-        })
+        return sendSuccessArrayResponse(res, formattedUsers)
     } else {
-        const [users, totalItems] = await Promise.all([
-            userService.getAllPaginated(query),
-            userService.countAll()
-        ]);
-        const dataFormatted: FormattedArrayEntityData = formatUsers(users);
-        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
+        const totalItems = await userService.countAll(query.isActive);
+        return sendPaginatedResponse(res, formattedUsers, query, totalItems);
     }
 })
 
@@ -37,10 +34,8 @@ const getUserByUuid = catchAsync(async (req: Request, res: Response, next: NextF
     if (!user) {
         return next(new AppError('EntityNotFound', `User with Uuid ${uuid} not found!`));
     }
-    return res.status(200).json({
-        status: 'success',
-        data: formatUser(user)
-    })
+    const formattedUser: FormattedEntityData = formatUser(user);
+    return sendSuccessResponse(res, formattedUser)
 })
 
 const getAuthenticatedUser = catchAsync( async(req: Request, res: Response, next: NextFunction) => {
@@ -50,19 +45,15 @@ const getAuthenticatedUser = catchAsync( async(req: Request, res: Response, next
     if (!currentUser) {
         return next(new AppError('EntityNotFound', `User with Uuid ${authenticatedUser.uuid} not found!`));
     }
-    return res.status(200).json({
-        status: 'success',
-        data: formatUser(currentUser)
-    })
+    const formattedUser: FormattedEntityData = formatUser(currentUser);
+    return sendSuccessResponse(res, formattedUser)
 })
 
 const insertUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const data: CreateUserSchema = req.body;
     const user: User = await userService.create(data);
-    return res.status(201).json({
-        status: 'success',
-        data: formatUser(user)
-    })
+    const formattedUser: FormattedEntityData = formatUser(user);
+    return sendSuccessResponse(res, formattedUser, 201);
 })
 
 const updateUserByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -73,10 +64,8 @@ const updateUserByUuid = catchAsync(async (req: Request, res: Response, next: Ne
         return next(new AppError('EntityNotFound', `User with Uuid ${uuid} not found!`));
     }
     const updatedUser: User = await userService.updateByUuid(uuid, data);
-    return res.status(200).json({
-        status: 'success',
-        data: formatUser(updatedUser)
-    })
+    const formattedUser: FormattedEntityData = formatUser(updatedUser);
+    return sendSuccessResponse(res, formattedUser);
 })
 
 const updateAuthenticatedUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -84,10 +73,7 @@ const updateAuthenticatedUser = catchAsync(async (req: Request, res: Response, n
     const authenticatedUser: UserTokenPayload = authResponse.locals.user;
     const data: UpdateUserSchema = req.body;
     const updatedUser: User = await userService.updateByUuid(authenticatedUser.uuid, data);
-    return res.status(200).json({
-        status: 'success',
-        data: formatUser(updatedUser)
-    })
+    return sendSuccessResponse(res, formatUser(updatedUser));
 })
 
 const deleteUserByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -97,10 +83,7 @@ const deleteUserByUuid = catchAsync(async (req: Request, res: Response, next: Ne
         return next(new AppError('EntityNotFound', `User with Uuid ${uuid} not found!`));
     }
     await userService.deleteByUuid(uuid);
-    return res.status(204).json({
-        status: 'success',
-        data: null
-    })
+    return sendSuccessResponse(res, null, 204);
 })
 
 // Softly delete authenticated user
@@ -108,10 +91,7 @@ const deleteAuthenticatedUser = catchAsync(async (req: Request, res: Response, n
     const authResponse = res as AuthResponse;
     const authenticatedUser: UserTokenPayload = authResponse.locals.user;
     await userService.deleteSoftByUuid(authenticatedUser.uuid)
-    return res.status(204).json({
-        status: 'success',
-        data: null
-    })
+    return sendSuccessResponse(res, null, 204);
 })
 
 export default {

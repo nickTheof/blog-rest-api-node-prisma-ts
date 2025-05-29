@@ -5,7 +5,7 @@ import commentController from "../controller/comment.controller";
 import {verifyToken, verifyRoles} from "../middlewares/auth.middleware";
 import {validateBody, validateQuery, validateParams} from "../middlewares/validate.middleware";
 import {createUserSchema, updateUserSchema} from "../schemas/user.schema";
-import {filterPostsPaginationQuerySchema, paginationQuerySchema} from "../schemas/pagination-query.schema";
+import {filterPostsPaginationQuerySchema, filterUsersPaginationQuerySchema, paginationQuerySchema} from "../schemas/pagination-query.schema";
 import {postCreateSchema, postUpdateSchema} from "../schemas/post.schema";
 import {Role} from "@prisma/client";
 import profileController from "../controller/profile.controller";
@@ -23,7 +23,7 @@ router.route("/me")
     .delete(userController.deleteAuthenticatedUser);
 
 router.route("/me/posts")
-    .get(validateQuery(paginationQuerySchema), postController.getAllUserPosts)
+    .get(validateQuery(filterPostsPaginationQuerySchema), postController.getAllUserPosts)
     .post(validateBody(postCreateSchema), postController.insertPost);
 
 
@@ -41,7 +41,7 @@ router.route("/me/profile")
 // Only ADMIN users can access the following routes
 router.use(verifyRoles(Role.ADMIN));
 router.route('/')
-    .get(validateQuery(paginationQuerySchema), userController.getAllUsers)
+    .get(validateQuery(filterUsersPaginationQuerySchema), userController.getAllUsers)
     .post(validateBody(createUserSchema), userController.insertUser)
 
 router.route('/:uuid')
