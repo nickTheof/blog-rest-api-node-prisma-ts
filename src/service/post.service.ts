@@ -1,91 +1,65 @@
 import prisma from '../prisma/client';
-import {PaginationQuery, PostCreateSchema, PostUpdateSchema} from "../types/zod-schemas.types";
-import { Post } from "@prisma/client";
-import mapUpdatePostData from "../utils/helpers/update.helpers";
+import {
+    FilterPostsPaginationQuery,
+    PostCreateSchema,
+    PostUpdateSchema
+} from "../types/zod-schemas.types";
+import {Post, PostStatus, Prisma} from "@prisma/client";
+import mapUpdatePostData, {MappedUpdateData} from "../utils/helpers/update.helpers";
+import {
+    generateFilterAuthorWhere, generateFilterPostUuidWhere,
+    generateFilterStatusWhere,
+    generatePaginationQuery
+} from "../utils/helpers/prisma-predicates.helpers";
 
-
-// Get all posts
-const getAll = async (): Promise<Post[]> => {
-    return prisma.post.findMany();
-};
-
-// Get count of all posts
-const countAll = async (): Promise<number> => {
-    return prisma.post.count();
-};
-
-// Get paginated posts
-const getAllPaginated = async (query: PaginationQuery): Promise<Post[]> => {
-    return prisma.post.findMany({
-        skip: (query.page - 1) * query.limit,
-        take: query.limit
-    });
-};
-
-// Get all posts for a user (by user UUID)
-const getAllByUserUuid = async (userUuid: string): Promise<Post[]> => {
+const getAll = async (query: FilterPostsPaginationQuery, authorUuid?: string): Promise<Post[]> => {
+    const statusWhere: Prisma.PostWhereInput = generateFilterStatusWhere(query.status);
+    const authorWhere: Prisma.PostWhereInput = generateFilterAuthorWhere(authorUuid);
+    const paginationArgs: Prisma.PostFindManyArgs = generatePaginationQuery(query);
     return prisma.post.findMany({
         where: {
-            author: { uuid: userUuid }
-        }
-    });
-};
-
-// Get paginated posts for a user
-const getAllPaginatedByUserUuid = async (
-    userUuid: string,
-    query: PaginationQuery
-): Promise<Post[]> => {
-    return prisma.post.findMany({
-        where: {
-            author: { uuid: userUuid }
+            ...statusWhere,
+            ...authorWhere,
         },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit
+        ...paginationArgs
     });
 };
 
-// Get count of all user posts
-const countAllByUserUuid = async (userUuid: string): Promise<number> => {
+const countAll = async (status?: PostStatus[] , authorUuid?: string ): Promise<number> => {
+    const statusWhere: Prisma.PostWhereInput = generateFilterStatusWhere(status);
+    const authorWhere: Prisma.PostWhereInput = generateFilterAuthorWhere(authorUuid);
     return prisma.post.count({
         where: {
-            author: { uuid: userUuid }
+            ...statusWhere,
+            ...authorWhere,
         }
     });
 };
 
-// Get a single post by its UUID
-const getByUuid = async (uuid: string): Promise<Post | null> => {
-    return prisma.post.findUnique({
-        where: { uuid }
-    });
-};
-
-const getByAuthorUuidAndPostUuid = async (
-    userUuid: string,
-    postUuid: string
-): Promise<Post | null> => {
-    return prisma.post.findUnique({
+const getFirstByFilters = async ( postUuid?: string, authorUuid?: string ): Promise<Post | null> => {
+    const authorWhere: Prisma.PostWhereInput = generateFilterAuthorWhere(authorUuid);
+    const postUuidWhere: Prisma.PostWhereInput = generateFilterPostUuidWhere(postUuid);
+    return prisma.post.findFirst({
         where: {
-            author: { uuid: userUuid },
-            uuid: postUuid
+            ...authorWhere,
+            ...postUuidWhere
         }
-    });
+    })
+
 }
 
-// Create a post and link to a user by UUID
 const create = async (
     userUuid: string,
     data: PostCreateSchema
 ): Promise<Post> => {
-    const { title, description, published, categories } = data;
+    const { title, description, status, categories } = data;
     const categoriesConnectData = categories?.map(id => ({ id })) || [];
 
     return prisma.post.create({
         data: {
             title,
             description,
-            published: published ?? false,
+            status: status ?? PostStatus.DRAFT,
             author: {
                 connect: { uuid: userUuid }
             },
@@ -100,7 +74,7 @@ const create = async (
 const updateByUuid = async (
     uuid: string,
     data: PostUpdateSchema): Promise<Post> => {
-    const updateData = mapUpdatePostData(data);
+    const updateData: MappedUpdateData = mapUpdatePostData(data);
 
     return prisma.post.update({
         where: {
@@ -145,18 +119,37 @@ const deleteByUserUuidAndPostUuid = async (userUuid: string, postUuid: string): 
     });
 }
 
+const softDeleteByUuid = async (uuid: string): Promise<Post> => {
+    return prisma.post.update({
+        where: { uuid },
+        data: {
+            status: PostStatus.ARCHIVED
+        }
+    });
+};
+
+const softDeleteByUserUuidAndPostUuid = async (userUuid: string, postUuid: string): Promise<Post> => {
+    return prisma.post.update({
+        where: {
+            author: { uuid: userUuid },
+            uuid: postUuid
+        },
+        data: {
+            status: PostStatus.ARCHIVED
+        }
+    })
+}
+
+
 export default {
     getAll,
     countAll,
-    getAllPaginated,
-    getAllUserPosts: getAllByUserUuid,
-    getByAuthorUuidAndPostUuid,
-    countAllUserPosts: countAllByUserUuid,
-    getAllUserPostsPaginated: getAllPaginatedByUserUuid,
-    getByUuid,
+    getFirstByFilters,
     create,
     updateByUuid,
     updateByUserUuidAndPostUuid,
     deleteByUuid,
-    deleteByUserUuidAndPostUuid
-};
+    deleteByUserUuidAndPostUuid,
+    softDeleteByUserUuidAndPostUuid,
+    softDeleteByUuid,
+}
