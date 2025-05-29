@@ -1,36 +1,32 @@
+import {Request, Response, NextFunction} from "express";
 import profileService from "../service/profile.service";
 import catchAsync from "../utils/catchAsync";
-import {Request, Response, NextFunction} from "express";
 import {User} from "@prisma/client";
 import {PaginationQuery, ProfileCreateSchema} from "../types/zod-schemas.types";
-import {
-    formatProfile,
-    formatProfiles,
-    FormattedArrayEntityData,
-    ProfileWithUser,
-    sendPaginatedResponse
-} from "../utils/helpers/response.helpers";
 import {AppError} from "../utils/AppError";
 import userService from "../service/user.service";
 import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
+import {getAuthenticatedProfile, getAuthenticatedUser} from "../utils/helpers/auth-profile.helpers";
+import {
+    formatProfile,
+    formatProfiles,
+    FormattedArrayEntityData, FormattedEntityData,
+    ProfileWithUser,
+    sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse
+} from "../utils/helpers/response.helpers";
+
+
 
 const getAllProfiles = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query = res.locals.validatedQuery as PaginationQuery;
+    const profiles: ProfileWithUser[] = await profileService.getAll(query);
+    const formattedProfiles: FormattedArrayEntityData = formatProfiles(profiles);
     if (!query.paginated) {
-        const profiles: ProfileWithUser[] = await profileService.getAll();
-        return res.status(200).json({
-            status: 'success',
-            results: profiles.length,
-            data: formatProfiles(profiles)
-        })
+        return sendSuccessArrayResponse(res, formattedProfiles)
     } else {
-        const [profiles, totalItems] = await Promise.all([
-            profileService.getAllPaginated(query),
-            profileService.countAll()
-        ])
-        const dataFormatted: FormattedArrayEntityData = formatProfiles(profiles);
-        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
+        const totalItems = await profileService.countAll();
+        return sendPaginatedResponse(res, formattedProfiles, query, totalItems);
     }
 })
 
@@ -44,10 +40,8 @@ const getProfileByUserUuid = catchAsync(async (req: Request, res: Response, next
     if (!profile) {
         return next(new AppError('EntityNotFound', `Profile with userId ${user.id} not found!`));
     }
-    return res.status(200).json({
-        status: 'success',
-        data: formatProfile(profile)
-    })
+    const formattedProfile: FormattedEntityData = formatProfile(profile);
+    return sendSuccessResponse(res, formattedProfile)
 })
 
 const getProfileById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -56,18 +50,14 @@ const getProfileById = catchAsync(async (req: Request, res: Response, next: Next
     if (!profile) {
         return next(new AppError('EntityNotFound', `Profile with id ${id} not found!`));
     }
-    return res.status(200).json({
-        status: 'success',
-        data: formatProfile(profile)
-    })
+    const formattedProfile: FormattedEntityData = formatProfile(profile);
+    return sendSuccessResponse(res, formattedProfile)
 })
 
 const getAuthenticatedUserProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const {profile} = await getAuthenticatedUserAndProfile(res, next);
-    return res.status(200).json({
-        status: 'success',
-        data: formatProfile(profile)
-    })
+    const profile: ProfileWithUser = await getAuthenticatedProfile(res, next);
+    const formattedProfile: FormattedEntityData = formatProfile(profile);
+    return sendSuccessResponse(res, formattedProfile)
 })
 
 const deleteProfileById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -77,10 +67,7 @@ const deleteProfileById = catchAsync(async (req: Request, res: Response, next: N
         return next(new AppError('EntityNotFound', `Profile with id ${id} not found!`));
     }
     await profileService.deleteById(profile.id);
-    return res.status(204).json({
-        status: 'success',
-        data: null
-    })
+    return sendSuccessResponse(res, null, 204);
 })
 
 const createAuthenticatedUserProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -88,28 +75,25 @@ const createAuthenticatedUserProfile = catchAsync(async (req: Request, res: Resp
     const authResponse = res as AuthResponse;
     const user: UserTokenPayload = authResponse.locals.user;
     const profile: ProfileWithUser = await profileService.create(user.uuid, data);
-    return res.status(201).json({
-        status: 'success',
-        data: formatProfile(profile)
-    })
+    const formattedProfile: FormattedEntityData = formatProfile(profile);
+    return sendSuccessResponse(res, formattedProfile, 201)
 })
+
+//TODO Add userId in token payload and use it to delete profile by user id
 
 const deleteAuthenticatedUserProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const {user} = await getAuthenticatedUserAndProfile(res, next);
+    const user: User = await getAuthenticatedUser(res, next);
     await profileService.deleteById(user.id);
-    return res.status(204).json({
-        status: 'success',
-        data: null
-    })
+    return sendSuccessResponse(res, null, 204);
 })
 
+
+//TODO add userId in token payload and use it to update profile by user id
 const updateAuthenticatedUserProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const {user} = await getAuthenticatedUserAndProfile(res, next);
+    const user: User = await getAuthenticatedUser(res, next);
     const updatedProfile: ProfileWithUser = await profileService.update(user.id, req.body);
-    return res.status(200).json({
-        status: 'success',
-        data: formatProfile(updatedProfile)
-    })
+    const formattedProfile: FormattedEntityData = formatProfile(updatedProfile);
+    return sendSuccessResponse(res, formattedProfile, 200);
 })
 
 const updateProfileById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -119,31 +103,9 @@ const updateProfileById = catchAsync(async (req: Request, res: Response, next: N
         return next(new AppError('EntityNotFound', `Profile with id ${id} not found!`));
     }
     const updatedProfile: ProfileWithUser = await profileService.updateById(profile.id, req.body);
-    return res.status(200).json({
-        status: 'success',
-        data: formatProfile(updatedProfile)
-    })
+    const formattedProfile: FormattedEntityData = formatProfile(updatedProfile);
+    return sendSuccessResponse(res, formattedProfile, 200);
 })
-
-async function getAuthenticatedUserAndProfile(
-    res: Response,
-    next: NextFunction
-): Promise<{ user: User; profile: ProfileWithUser }> {
-    const authResponse = res as AuthResponse;
-    const userAuth: UserTokenPayload = authResponse.locals.user;
-
-    const user = await userService.getByUuid(userAuth.uuid);
-    if (!user) {
-        throw new AppError("EntityNotFound", `User with Uuid ${userAuth.uuid} not found!`);
-    }
-
-    const profile = await profileService.getByUserId(user.id);
-    if (!profile) {
-        throw new AppError("EntityNotFound", `Profile with userId ${user.id} not found!`);
-    }
-
-    return { user, profile };
-}
 
 export default {
     getAllProfiles,
