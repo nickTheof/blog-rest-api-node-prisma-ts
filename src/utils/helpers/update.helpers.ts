@@ -1,9 +1,10 @@
 import {PostUpdateSchema} from "../../types/zod-schemas.types";
+import {PostStatus} from "@prisma/client";
 
-type MappedUpdateData = {
+export type MappedUpdateData = {
     title?: string,
     description?: string,
-    published?: boolean,
+    status?: PostStatus,
     category?: {
         set: [],
         connect: { id: number }[]
@@ -20,8 +21,8 @@ const mapUpdatePostData = (data: PostUpdateSchema) => {
         updateData.description = data.description;
     }
 
-    if (data.published !== undefined) {
-        updateData.published = data.published;
+    if (data.status !== undefined) {
+        updateData.status = data.status;
     }
 
     if (data.categories !== undefined) {
