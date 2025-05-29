@@ -1,5 +1,6 @@
 
 import { z } from 'zod';
+import {PostStatus} from "@prisma/client";
 
 export const paginationQuerySchema = z.object({
     paginated: z.string().default("false").transform(val => val === "true"),
@@ -18,3 +19,8 @@ export const paginationQuerySchema = z.object({
             message: "Limit must be a positive integer",
         }),
 }).strict();
+
+export const filterPostsPaginationQuerySchema = paginationQuerySchema.extend(({
+    status: z.union([z.nativeEnum(PostStatus), z.array(z.nativeEnum(PostStatus))]).optional()
+        .transform(val => val ? (Array.isArray(val) ? val : [val]) : undefined),
+}))
