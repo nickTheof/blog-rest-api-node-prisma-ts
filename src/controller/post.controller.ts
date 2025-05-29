@@ -1,111 +1,92 @@
+import {Request, Response, NextFunction} from "express";
 import postService from "../service/post.service";
 import catchAsync from "../utils/catchAsync";
-import {Request, Response, NextFunction} from "express";
-import {PostCreateSchema, PostUpdateSchema, PaginationQuery} from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
 import {Post} from "@prisma/client";
 import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
 import {
+    PostCreateSchema,
+    PostUpdateSchema,
+    FilterPostsPaginationQuery
+} from "../types/zod-schemas.types";
+import {
     formatPost,
     formatPosts,
-    FormattedPaginatedData,
-    sendPaginatedResponse
+    FormattedArrayEntityData, FormattedEntityData,
+    sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse
 } from "../utils/helpers/response.helpers";
 
 const getAllPosts = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query = res.locals.validatedQuery as PaginationQuery;
+    const query = res.locals.validatedQuery as FilterPostsPaginationQuery;
+    const posts: Post[] = await postService.getAll(query, undefined);
+    const formattedPosts: FormattedArrayEntityData = formatPosts(posts);
     if (!query.paginated) {
-        const posts: Post[] = await postService.getAll();
-        return res.status(200).json({
-            status: 'success',
-            results: posts.length,
-            data: formatPosts(posts)
-        })
+        return sendSuccessArrayResponse(res, formattedPosts);
     } else {
-        const data: Post[] = await postService.getAllPaginated(query);
-        const totalItems: number = await postService.countAll();
-        const dataFormatted: FormattedPaginatedData = formatPosts(data);
-        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
+        const totalItems: number = await postService.countAll(query.status, undefined);
+        return sendPaginatedResponse(res, formattedPosts, query, totalItems);
     }
 })
 
-
 const getAllUserPosts = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query = res.locals.validatedQuery as PaginationQuery;
+    const query = res.locals.validatedQuery as FilterPostsPaginationQuery;
     const authResponse  = res as AuthResponse;
     const user: UserTokenPayload = authResponse.locals.user;
+    const posts: Post[] = await postService.getAll(query, user.uuid);
+    const formattedPosts: FormattedArrayEntityData = formatPosts(posts);
     if (!query.paginated) {
-        const data: Post[] = await postService.getAllUserPosts(user.uuid);
-        return res.status(200).json({
-            status: 'success',
-            results: data.length,
-            data: formatPosts(data)
-        })
+       return sendSuccessArrayResponse(res, formattedPosts);
     } else {
-        const data: Post[] = await postService.getAllUserPostsPaginated(user.uuid, query);
-        const totalItems: number = await postService.countAllUserPosts(user.uuid);
-        const dataFormatted: FormattedPaginatedData = formatPosts(data);
-        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
+        const totalItems: number = await postService.countAll(query.status, user.uuid);
+        return sendPaginatedResponse(res, formattedPosts, query, totalItems);
     }
-
 })
 
 const getAllUserPostsByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query = res.locals.validatedQuery as PaginationQuery;
+    const query = res.locals.validatedQuery as FilterPostsPaginationQuery;
     const uuid: string = req.params.uuid;
+    const posts: Post[] = await postService.getAll(query, uuid);
+    const formattedPosts: FormattedArrayEntityData = formatPosts(posts);
     if (!query.paginated) {
-        const data: Post[] = await postService.getAllUserPosts(uuid);
-        return res.status(200).json({
-            status: 'success',
-            results: data.length,
-            data: formatPosts(data)
-        })
+        return sendSuccessArrayResponse(res, formattedPosts);
     } else {
-        const data: Post[] = await postService.getAllUserPostsPaginated(uuid, query);
-        const totalItems: number = await postService.countAllUserPosts(uuid);
-        const dataFormatted: FormattedPaginatedData = formatPosts(data);
-        return sendPaginatedResponse(res, dataFormatted, query, totalItems);
+        const totalItems: number = await postService.countAll(query.status, uuid);
+        return sendPaginatedResponse(res, formattedPosts, query, totalItems);
     }
 })
 
 const getPostByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {uuid} = req.params;
-    const data: Post | null = await postService.getByUuid(uuid);
+    const data: Post | null = await postService.getFirstByFilters(uuid);
     if (!data) {
         return next(new AppError("EntityNotFound", `Post with uuid ${uuid} not found`));
     }
-    return res.status(200).json({
-        status: 'success',
-        data: formatPost(data)
-    })
+    const formattedPost: FormattedEntityData = formatPost(data);
+    return sendSuccessResponse(res, formattedPost);
 })
 
 const getAuthenticatedUserPostByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const authResponse  = res as AuthResponse;
     const user: UserTokenPayload = authResponse.locals.user;
     const {uuid} = req.params;
-    const data: Post | null = await postService.getByAuthorUuidAndPostUuid(user.uuid, uuid);
+    const data: Post | null = await postService.getFirstByFilters(user.uuid, uuid);
     if (!data) {
         return next(new AppError("EntityNotFound", `Post with uuid ${uuid} not found`));
     }
-    return res.status(200).json({
-        status: 'success',
-        data: formatPost(data)
-    })
+    const formattedPost: FormattedEntityData = formatPost(data);
+    return sendSuccessResponse(res, formattedPost);
 })
 
 const getPostByUserUuidAndPostUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userUuid = req.params.uuid;
     const postUuid = req.params.postUuid;
-    const data: Post | null = await postService.getByAuthorUuidAndPostUuid(userUuid, postUuid);
+    const data: Post | null = await postService.getFirstByFilters(userUuid, postUuid);
     if (!data) {
         return next(new AppError("EntityNotFound", `Post with uuid ${postUuid} not found`));
     }
-    return res.status(200).json({
-        status: 'success',
-        data: formatPost(data)
-    })
+    const formattedPost: FormattedEntityData = formatPost(data);
+    return sendSuccessResponse(res, formattedPost);
 })
 
 const insertPost = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -113,24 +94,20 @@ const insertPost = catchAsync(async (req: Request, res: Response, next: NextFunc
     const user: UserTokenPayload = authResponse.locals.user;
     const data: PostCreateSchema = req.body;
     const post: Post = await postService.create(user.uuid, data);
-    return res.status(201).json({
-        status: 'success',
-        data: formatPost(post)
-    })
+    const formattedPost: FormattedEntityData = formatPost(post);
+    return sendSuccessResponse(res, formattedPost, 201);
 })
 
 const updatePostByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {uuid} = req.params;
     const data: PostUpdateSchema = req.body;
-    const toUpdate: Post | null = await postService.getByUuid(uuid);
+    const toUpdate: Post | null = await postService.getFirstByFilters(uuid);
     if (!toUpdate) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${uuid} not found!`));
     }
     const updatedPost: Post = await postService.updateByUuid(uuid, data);
-    return res.status(200).json({
-        status: "success",
-        data: formatPost(updatedPost)
-    })
+    const formattedPost: FormattedEntityData = formatPost(updatedPost);
+    return sendSuccessResponse(res, formattedPost);
 })
 
 const updateAuthenticatedUserPost = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -138,72 +115,59 @@ const updateAuthenticatedUserPost = catchAsync(async (req: Request, res: Respons
     const user: UserTokenPayload = authResponse.locals.user;
     const data: PostUpdateSchema = req.body;
     const postUuid: string = req.params.uuid;
-    const toUpdate: Post | null = await postService.getByAuthorUuidAndPostUuid(user.uuid, postUuid);
+    const toUpdate: Post | null = await postService.getFirstByFilters(user.uuid, postUuid);
     if (!toUpdate) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${postUuid} not found!`));
     }
     const updatedPost: Post = await postService.updateByUserUuidAndPostUuid(user.uuid, postUuid, data);
-    return res.status(200).json({
-        status: "success",
-        data: formatPost(updatedPost)
-    })
+    const formattedPost: FormattedEntityData = formatPost(updatedPost);
+    return sendSuccessResponse(res, formattedPost);
 })
 
 const updatePostByUserUuidAndPostUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userUuid: string = req.params.uuid;
     const postUuid: string = req.params.postUuid;
     const data: PostUpdateSchema = req.body;
-    const toUpdate: Post | null = await postService.getByAuthorUuidAndPostUuid(userUuid, postUuid);
+    const toUpdate: Post | null = await postService.getFirstByFilters(userUuid, postUuid);
     if (!toUpdate) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${postUuid} not found!`));
     }
     const updatedPost: Post = await postService.updateByUserUuidAndPostUuid(userUuid, postUuid, data);
-    return res.status(200).json({
-        status: "success",
-        data: formatPost(updatedPost)
-    })
+    const formattedPost: FormattedEntityData = formatPost(updatedPost);
+    return sendSuccessResponse(res, formattedPost);
 })
 
 const deletePostByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {uuid} = req.params;
-    const toDelete: Post | null = await postService.getByUuid(uuid);
+    const toDelete: Post | null = await postService.getFirstByFilters(uuid);
     if (!toDelete) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${uuid} not found!`));
     }
-    await postService.deleteByUuid(uuid);
-    return res.status(204).json({
-        status: "success",
-        data: null
-    })
+    await postService.softDeleteByUuid(uuid);
+    return sendSuccessResponse(res, null, 204);
 })
 
 const authUserDeletePostByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const authResponse  = res as AuthResponse;
     const user: UserTokenPayload = authResponse.locals.user;
     const {uuid} = req.params;
-    const toDelete: Post | null = await postService.getByAuthorUuidAndPostUuid(user.uuid, uuid);
+    const toDelete: Post | null = await postService.getFirstByFilters(user.uuid, uuid);
     if (!toDelete) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${uuid} not found!`));
     }
-    await postService.deleteByUserUuidAndPostUuid(user.uuid, uuid);
-    return res.status(204).json({
-        status: "success",
-        data: null
-    })
+    await postService.softDeleteByUserUuidAndPostUuid(user.uuid, uuid);
+    return sendSuccessResponse(res, null, 204);
 })
 
 const deletePostByUserUuidAndPostUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userUuid: string = req.params.uuid;
     const postUuid: string = req.params.postUuid;
-    const toDelete: Post | null = await postService.getByAuthorUuidAndPostUuid(userUuid, postUuid);
+    const toDelete: Post | null = await postService.getFirstByFilters(userUuid, postUuid);
     if (!toDelete) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${postUuid} not found!`));
     }
-    await postService.deleteByUserUuidAndPostUuid(userUuid, postUuid);
-    return res.status(204).json({
-        status: "success",
-        data: null
-    })
+    await postService.softDeleteByUserUuidAndPostUuid(userUuid, postUuid);
+    return sendSuccessResponse(res, null, 204);
 })
 
 export default {

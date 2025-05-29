@@ -187,7 +187,7 @@ async function getAuthenticatedUserAndPost(postUuid: string, res: Response): Pro
     if (!fetchedUser) {
         throw new AppError('EntityNotFound', `User with uuid ${user.uuid} not found!`);
     }
-    const post: Post | null = await postService.getByUuid(postUuid);
+    const post: Post | null = await postService.getFirstByFilters(postUuid);
     if (!post) {
         throw new AppError("EntityNotFound", `Post with uuid ${postUuid} not found!`);
     }
