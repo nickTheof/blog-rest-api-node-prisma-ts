@@ -39,7 +39,9 @@ app.use(
         whitelist: [
             "paginated",
             "page",
-            "limit"
+            "limit",
+            "status",
+            "isActive",
         ],
     })
 );
