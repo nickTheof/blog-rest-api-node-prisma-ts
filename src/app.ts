@@ -12,6 +12,8 @@ import {errorHandler} from "./middlewares/error.middleware";
 import {AppError} from "./utils/AppError";
 import config from "./config/config";
 import limiter from "./middlewares/limiter.middleware";
+import swaggerUi from "swagger-ui-express";
+import {swaggerOptions} from "./swaggerdocs/swagger";
 
 const app: Express = express();
 
@@ -53,6 +55,7 @@ app.use("/api/v1/categories", categoryRoutes)
 app.use("/api/v1/posts", postRoutes)
 app.use("/api/v1/profiles", profileRoutes)
 app.use("/api/v1/comments", commentRoutes)
+app.use("/api/v1/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerOptions))
 
 app.all("/{*splat}", (req, res, next) => {
     next(new AppError(`EntityNotFound`, "Can't find the ${req.originalUrl} on the server"));
