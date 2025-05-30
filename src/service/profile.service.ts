@@ -1,8 +1,8 @@
 import prisma from "../prisma/client";
 import {PaginationQuery, ProfileCreateSchema, ProfileUpdateSchema} from "../types/zod-schemas.types";
-import {ProfileWithUser} from "../utils/helpers/response.helpers";
 import {generatePaginationQuery} from "../utils/helpers/prisma-predicates.helpers";
 import { Prisma, Profile } from "@prisma/client";
+import {ProfileWithUser} from "../types/response.types";
 
 const getAll = (query: PaginationQuery): Promise<ProfileWithUser[]> => {
     const paginationArgs: Prisma.ProfileFindManyArgs = generatePaginationQuery(query);

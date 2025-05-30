@@ -8,12 +8,13 @@ import {
 } from "../types/zod-schemas.types";
 import {AppError} from "../utils/AppError";
 import {
-    FormattedArrayEntityData, FormattedEntityData, formatUser,
+     formatUser,
     formatUsers, sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse,
 } from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
 import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
+import {FormattedArrayEntityData, FormattedEntityData} from "../types/response.types";
 
 
 const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

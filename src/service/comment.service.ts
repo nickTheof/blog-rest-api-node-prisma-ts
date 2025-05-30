@@ -5,12 +5,12 @@ import {
     CommentUpdateSchema,
     FilterCommentsPaginationQuery,
 } from "../types/zod-schemas.types";
-import {CommentWithAuthor, CommentWithAuthorAndPost, CommentWithPost} from "../controller/comment.controller";
 import {
     generateAuthorWhere, generateFilterCommentStatusWhere,
     generatePaginationQuery,
     generatePostWhere
 } from "../utils/helpers/prisma-predicates.helpers";
+import {CommentWithAuthor, CommentWithAuthorAndPost, CommentWithPost} from "../types/response.types";
 
 const getAll = (query: FilterCommentsPaginationQuery): Promise<CommentWithAuthorAndPost[]> => {
     const queryPaginationArgs: Prisma.CommentFindManyArgs = generatePaginationQuery(query);

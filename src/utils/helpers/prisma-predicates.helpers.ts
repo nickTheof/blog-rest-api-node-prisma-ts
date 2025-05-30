@@ -1,10 +1,7 @@
 import {PaginationQuery} from "../../types/zod-schemas.types";
 import {CommentStatus, PostStatus, Prisma} from "@prisma/client";
+import {activeUsersWhere, AuthorWhere, findManyArgsPagination, postWhere} from "../../types/prisma-predicates.types";
 
-type findManyArgsPagination = {
-    skip?: number,
-    take?: number
-}
 
 export const generatePaginationQuery = (query: PaginationQuery): findManyArgsPagination  => {
     if (!query.paginated) {
@@ -42,9 +39,7 @@ export const generateFilterPostUuidWhere = (uuid?: string ): Prisma.PostWhereInp
     return where;
 }
 
-type activeUsersWhere = {
-    isActive?: boolean
-}
+
 
 export const generateFilterActiveUsersWhere = (isActive?: boolean): activeUsersWhere => {
     const where: activeUsersWhere = {};
@@ -55,11 +50,6 @@ export const generateFilterActiveUsersWhere = (isActive?: boolean): activeUsersW
     return where;
 }
 
-type AuthorWhere = {
-    author?: {
-        uuid: string
-    }
-}
 
 export const generateAuthorWhere = (authorUuid?: string ): AuthorWhere => {
     const where: AuthorWhere = {};
@@ -69,11 +59,7 @@ export const generateAuthorWhere = (authorUuid?: string ): AuthorWhere => {
     return where;
 }
 
-type postWhere = {
-    post?: {
-        uuid: string
-    }
-}
+
 
 export const generatePostWhere = (postUuid?: string ): postWhere => {
     const where: postWhere = {};

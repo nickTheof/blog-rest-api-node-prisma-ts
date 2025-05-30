@@ -1,10 +1,10 @@
 import {NextFunction, Response} from "express";
 import {User} from "@prisma/client";
-import {ProfileWithUser} from "./response.helpers";
 import {AuthResponse, UserTokenPayload} from "../../types/user-auth.types";
 import userService from "../../service/user.service";
 import {AppError} from "../AppError";
 import profileService from "../../service/profile.service";
+import {ProfileWithUser} from "../../types/response.types";
 
 
 export const getAuthenticatedProfile = async (res: Response, next: NextFunction):Promise<ProfileWithUser> => {

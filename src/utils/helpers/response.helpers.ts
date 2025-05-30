@@ -1,53 +1,18 @@
 import {Response} from "express";
-import {Category, Post, Prisma, User} from "@prisma/client";
+import { Post, User} from "@prisma/client";
 import {PaginationQuery} from "../../types/zod-schemas.types";
-import {CommentWithAuthor, CommentWithAuthorAndPost, CommentWithPost} from "../../controller/comment.controller";
+import {
+    CommentWithAuthor,
+    CommentWithAuthorAndPost, CommentWithPost,
+    FormattedArrayEntityData,
+    FormattedCommentWithAuthor,
+    FormattedCommentWithAuthorAndPost, FormattedCommentWithPost, FormattedEntityData,
+    FormattedPost,
+    FormattedProfile,
+    FormattedUser,
+    ProfileWithUser
+} from "../../types/response.types";
 
-export type ProfileWithUser = Prisma.ProfileGetPayload<{
-    include: {
-        user: true;
-    };
-}>;
-
-export type FormattedPost = Omit<Post, 'id' | 'authorId'> & {
-    id: string;
-    authorId: string;
-}
-
-export type FormattedUser = Omit<User, 'id'> & {
-    id: string;
-}
-
-export type FormattedProfile = Omit<ProfileWithUser, 'id' | 'userId' | 'user'> & {
-    id: string;
-    userId: string;
-    user: FormattedUser;
-}
-
-export type FormattedCommentWithAuthorAndPost = Omit<CommentWithAuthorAndPost, 'id' | 'userId' | 'postId' | 'author' | 'post'> & {
-    id: string;
-    userId: string;
-    postId: string;
-    author: FormattedUser;
-    post: FormattedPost;
-}
-
-export type FormattedCommentWithAuthor = Omit<CommentWithAuthor, 'id' | 'userId' | 'postId' | 'author' > & {
-    id: string;
-    userId: string;
-    postId: string;
-    author: FormattedUser;
-}
-
-export type FormattedCommentWithPost = Omit<CommentWithPost, 'id' | 'userId' | 'postId' | 'post' > & {
-    id: string;
-    userId: string;
-    postId: string;
-    post: FormattedPost;
-}
-
-export type FormattedEntityData = FormattedPost | FormattedUser | FormattedProfile | Category | FormattedCommentWithAuthorAndPost | FormattedCommentWithAuthor | FormattedCommentWithPost;
-export type FormattedArrayEntityData = FormattedEntityData[];
 
 export const formatPost= (post: Post): FormattedPost => {
     return {

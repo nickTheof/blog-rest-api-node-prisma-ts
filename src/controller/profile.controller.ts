@@ -11,10 +11,9 @@ import {getAuthenticatedProfile, getAuthenticatedUser} from "../utils/helpers/au
 import {
     formatProfile,
     formatProfiles,
-    FormattedArrayEntityData, FormattedEntityData,
-    ProfileWithUser,
     sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse
 } from "../utils/helpers/response.helpers";
+import {FormattedArrayEntityData, FormattedEntityData, ProfileWithUser} from "../types/response.types";
 
 
 

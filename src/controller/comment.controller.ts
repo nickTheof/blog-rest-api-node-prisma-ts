@@ -8,36 +8,22 @@ import {
 import {AuthResponse, UserTokenPayload} from "../types/user-auth.types";
 import commentService from "../service/comment.service";
 import {AppError} from "../utils/AppError";
-import {CommentStatus, Prisma} from "@prisma/client";
+import {CommentStatus} from "@prisma/client";
 import {
     formatComment,
     formatComments,
     formatCommentsWithAuthor,
     formatCommentsWithPost,
-    FormattedCommentWithAuthor,
-    FormattedCommentWithAuthorAndPost,
-    FormattedCommentWithPost,
     sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse
 } from "../utils/helpers/response.helpers";
+import {
+    CommentWithAuthor,
+    CommentWithAuthorAndPost, CommentWithPost,
+    FormattedCommentWithAuthor,
+    FormattedCommentWithAuthorAndPost,
+    FormattedCommentWithPost
+} from "../types/response.types";
 
-export type CommentWithAuthorAndPost = Prisma.CommentGetPayload<{
-    include: {
-        author: true,
-        post: true
-    }
-}>;
-
-export type CommentWithAuthor = Prisma.CommentGetPayload<{
-    include: {
-        author: true,
-    }
-}>;
-
-export type CommentWithPost = Prisma.CommentGetPayload<{
-    include: {
-        post: true,
-    }
-}>;
 
 const getAllComments = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query: FilterCommentsPaginationQuery = res.locals.validatedQuery as FilterCommentsPaginationQuery;

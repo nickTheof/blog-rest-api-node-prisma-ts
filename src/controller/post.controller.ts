@@ -13,9 +13,9 @@ import {
 import {
     formatPost,
     formatPosts,
-    FormattedArrayEntityData, FormattedEntityData,
     sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse
 } from "../utils/helpers/response.helpers";
+import {FormattedArrayEntityData, FormattedEntityData} from "../types/response.types";
 
 const getAllPosts = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query = res.locals.validatedQuery as FilterPostsPaginationQuery;
