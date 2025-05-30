@@ -100,3 +100,7 @@ model Comment {
 
   @@map("comments")
 }
+
+generator jsonSchema {
+  provider = "prisma-json-schema-generator"
+}
