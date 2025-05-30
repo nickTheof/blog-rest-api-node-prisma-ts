@@ -1,17 +1,23 @@
 import catchAsync from "../utils/catchAsync";
 import {Request, Response, NextFunction} from "express";
-import {CommentCreateSchema, CommentUpdateSchema, PaginationQuery} from "../types/zod-schemas.types";
+import {
+    CommentCreateSchema,
+    CommentUpdateSchema,
+    FilterCommentsPaginationQuery,
+} from "../types/zod-schemas.types";
 import {AuthResponse, UserTokenPayload} from "../types/user-auth.types";
 import commentService from "../service/comment.service";
-import userService from "../service/user.service";
-import postService from "../service/post.service";
 import {AppError} from "../utils/AppError";
-import { Post, Prisma, User} from "@prisma/client";
+import {CommentStatus, Prisma} from "@prisma/client";
 import {
     formatComment,
     formatComments,
-    formatCommentsWithAuthor, formatCommentsWithPost, FormattedCommentWithAuthor, FormattedCommentWithPost,
-    sendPaginatedResponse
+    formatCommentsWithAuthor,
+    formatCommentsWithPost,
+    FormattedCommentWithAuthor,
+    FormattedCommentWithAuthorAndPost,
+    FormattedCommentWithPost,
+    sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse
 } from "../utils/helpers/response.helpers";
 
 export type CommentWithAuthorAndPost = Prisma.CommentGetPayload<{
@@ -34,21 +40,14 @@ export type CommentWithPost = Prisma.CommentGetPayload<{
 }>;
 
 const getAllComments = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query: PaginationQuery = res.locals.validatedQuery as PaginationQuery;
+    const query: FilterCommentsPaginationQuery = res.locals.validatedQuery as FilterCommentsPaginationQuery;
+    const comments: CommentWithAuthorAndPost[] = await commentService.getAll(query);
+    const formattedComments: FormattedCommentWithAuthorAndPost[] = formatComments(comments);
     if (!query.paginated) {
-        const data: CommentWithAuthorAndPost[] = await commentService.getAll();
-        return res.status(200).json({
-            status: 'success',
-            results: data.length,
-            data: formatComments(data)
-        })
+        return sendSuccessArrayResponse(res, formattedComments);
     } else {
-        const [data, totalItems] = await Promise.all([
-            commentService.getAllPaginated(query),
-            commentService.countAll()
-        ])
-        const formattedData = formatComments(data);
-        return sendPaginatedResponse(res, formattedData, query, totalItems);
+        const totalItems: number = await commentService.countAll(query);
+        return sendPaginatedResponse(res, formattedComments, query, totalItems);
     }
 })
 
@@ -58,62 +57,43 @@ const getCommentByUuid = catchAsync(async (req: Request, res: Response, next: Ne
     if (!data) {
         return next(new AppError("EntityNotFound", `Comment with uuid ${uuid} not found`));
     }
-    return res.status(200).json({
-        status: 'success',
-        data: formatComment(data)
-    })
+    const formattedComment: FormattedCommentWithAuthorAndPost = formatComment(data);
+    return sendSuccessResponse(res, formattedComment);
 })
 
 const getAllCommentsByPostUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query: PaginationQuery = res.locals.validatedQuery as PaginationQuery;
+    const query: FilterCommentsPaginationQuery = res.locals.validatedQuery as FilterCommentsPaginationQuery;
     const postUuid: string = req.params.uuid;
+    const comments: CommentWithAuthor[] = await commentService.getAllByPostUuid(postUuid, query);
+    const formattedComments: FormattedCommentWithAuthor[] = formatCommentsWithAuthor(comments);
     if (!query.paginated) {
-        const data: CommentWithAuthor[] = await commentService.getAllByPostUuid(postUuid);
-        return res.status(200).json({
-            status: 'success',
-            results: data.length,
-            data: formatCommentsWithAuthor(data)
-        })
+        return sendSuccessArrayResponse(res, formattedComments);
     } else {
-        const [data, totalItems] = await Promise.all([
-            commentService.getAllByPostUuidPaginated(postUuid, query),
-            commentService.countAllByPostUuid(postUuid)
-        ])
-        const formattedData: FormattedCommentWithAuthor[] = formatCommentsWithAuthor(data);
-        return sendPaginatedResponse(res, formattedData, query, totalItems);
+        const totalItems: number = await commentService.countAll(query, undefined, postUuid);
+        return sendPaginatedResponse(res, formattedComments, query, totalItems);
     }
 })
 
 const getAllCommentsByUserUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query: PaginationQuery = res.locals.validatedQuery as PaginationQuery;
+    const query: FilterCommentsPaginationQuery = res.locals.validatedQuery as FilterCommentsPaginationQuery;
     const userUuid: string = req.params.uuid;
+    const comments: CommentWithPost[] = await commentService.getAllByUserUuid(userUuid, query);
+    const formattedComments: FormattedCommentWithPost[] = formatCommentsWithPost(comments);
     if (!query.paginated) {
-        const data: CommentWithPost[] = await commentService.getAllByUserUuid(userUuid);
-        return res.status(200).json({
-            status: 'success',
-            results: data.length,
-            data: formatCommentsWithPost(data)
-        })
+        return sendSuccessArrayResponse(res, formattedComments);
     } else {
-        const [data, totalItems] = await Promise.all([
-            commentService.getAllByUserUuidPaginated(userUuid, query),
-            commentService.countAllByUserUuid(userUuid)
-        ])
-        const formattedData: FormattedCommentWithPost[] = formatCommentsWithPost(data);
-        return sendPaginatedResponse(res, formattedData, query, totalItems);
+        const totalItems: number = await commentService.countAll(query, userUuid);
+        return sendPaginatedResponse(res, formattedComments, query, totalItems);
     }
 })
 
 const createComment = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const comment: CommentCreateSchema = req.body;
     const postUuid: string = req.params.uuid;
-    const {user} = await getAuthenticatedUserAndPost(postUuid, res);
+    const user: UserTokenPayload = res.locals.user;
     const newComment: CommentWithAuthorAndPost = await commentService.create(user.uuid, postUuid, comment);
-
-    return res.status(201).json({
-        status: 'success',
-        data: formatComment(newComment)
-    })
+    const formattedComment: FormattedCommentWithAuthorAndPost = formatComment(newComment);
+    return sendSuccessResponse(res, formattedComment, 201);
 })
 
 const updateCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -124,10 +104,8 @@ const updateCommentByUuid = catchAsync(async (req: Request, res: Response, next:
         return next(new AppError("EntityNotFound", `Comment with uuid ${uuid} not found`));
     }
     const updatedComment: CommentWithAuthorAndPost = await commentService.updateByUuid(uuid, data);
-    return res.status(200).json({
-        status: 'success',
-        data: formatComment(updatedComment)
-    })
+    const formattedComment: FormattedCommentWithAuthorAndPost = formatComment(updatedComment);
+    return sendSuccessResponse(res, formattedComment)
 })
 
 const updateAuthenticatedUserCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -143,10 +121,8 @@ const updateAuthenticatedUserCommentByUuid = catchAsync(async (req: Request, res
         return next(new AppError("EntityForbiddenAction", `Comment with uuid ${commentUuid} not found`));
     }
     const updatedComment: CommentWithAuthorAndPost = await commentService.updateByUuid(commentUuid, data);
-    return res.status(200).json({
-        status: 'success',
-        data: formatComment(updatedComment)
-    })
+    const formattedComment: FormattedCommentWithAuthorAndPost = formatComment(updatedComment);
+    return sendSuccessResponse(res, formattedComment)
 })
 
 const deleteCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -156,12 +132,19 @@ const deleteCommentByUuid = catchAsync(async (req: Request, res: Response, next:
         return next(new AppError("EntityNotFound", `Comment with uuid ${uuid} not found`));
     }
     await commentService.deleteByUuid(uuid);
-    return res.status(204).json({
-        status: 'success',
-        data: null
-    })
+    return sendSuccessResponse(res, null, 204);
 })
 
+const softlyDeleteCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const {uuid} = req.params;
+    const comment: CommentWithAuthorAndPost | null = await commentService.getByUuid(uuid);
+    if (!comment) {
+        return next(new AppError("EntityNotFound", `Comment with uuid ${uuid} not found`));
+    }
+    await commentService.updateByUuid(uuid, {status: CommentStatus.INACTIVE});
+})
+
+// Softly deleted, change the status of the comment to delete
 const deleteAuthenticatedUserCommentByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const authRes = res as AuthResponse;
     const user: UserTokenPayload = authRes.locals.user;
@@ -173,26 +156,9 @@ const deleteAuthenticatedUserCommentByUuid = catchAsync(async (req: Request, res
     if (comment.author.uuid !== user.uuid) {
         return next(new AppError("EntityForbiddenAction", `Comment with uuid ${commentUuid} not found`));
     }
-    await commentService.deleteByUuid(commentUuid);
-    return res.status(204).json({
-        status: 'success',
-        data: null
-    })
+    await commentService.updateByUuid(commentUuid, {status: CommentStatus.DELETED});
+    return sendSuccessResponse(res, null, 204);
 })
-
-async function getAuthenticatedUserAndPost(postUuid: string, res: Response): Promise<{user: User, post: Post}> {
-    const authRes = res as AuthResponse;
-    const user: UserTokenPayload = authRes.locals.user;
-    const fetchedUser: User | null = await userService.getByUuid(user.uuid);
-    if (!fetchedUser) {
-        throw new AppError('EntityNotFound', `User with uuid ${user.uuid} not found!`);
-    }
-    const post: Post | null = await postService.getFirstByFilters(postUuid);
-    if (!post) {
-        throw new AppError("EntityNotFound", `Post with uuid ${postUuid} not found!`);
-    }
-    return { user: fetchedUser, post: post };
-}
 
 export default {
     getAllComments,
@@ -201,6 +167,7 @@ export default {
     getCommentByUuid,
     createComment,
     deleteCommentByUuid,
+    softlyDeleteCommentByUuid,
     deleteAuthenticatedUserCommentByUuid,
     updateCommentByUuid,
     updateAuthenticatedUserCommentByUuid
