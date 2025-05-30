@@ -396,5 +396,477 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 },
             },
         },
+        "/api/v1/categories": {
+            get: {
+                tags: ["Categories"],
+                summary: "Get all categories in a list",
+                description:
+                    "Returns a list of all categories, optionally paginated.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "paginated",
+                        in: "query",
+                        description: "Set to true to paginate results.",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            enum: ["true", "false"],
+                            default: "false"
+                        }
+                    },
+                    {
+                        name: "page",
+                        in: "query",
+                        description: "Page number (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "1"
+                        }
+                    },
+                    {
+                        name: "limit",
+                        in: "query",
+                        description: "Number of results per page (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "50"
+                        }
+                    }
+                ],
+                responses: {
+                    200: {
+                        description: "List of all categories or paginated categories",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                results: { "type": "integer", "example": 2 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Category" }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                totalItems: { "type": "integer", "example": 16 },
+                                                totalPages: { "type": "integer", "example": 4 },
+                                                currentPage: { "type": "integer", "example": 1 },
+                                                limit: { "type": "integer", "example": 5 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Category" }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                examples: {
+                                    nonPaginated: {
+                                        summary: "Non-paginated list",
+                                        value: {
+                                            status: "success",
+                                            results: 2,
+                                            data: [
+                                                { "id": 1, "name": "Category A" },
+                                                { "id": 2, "name": "Category B" }
+                                            ]
+                                        }
+                                    },
+                                    paginated: {
+                                        summary: "Paginated list",
+                                        value: {
+                                            status: "success",
+                                            totalItems: 16,
+                                            totalPages: 4,
+                                            currentPage: 1,
+                                            limit: 5,
+                                            data: [
+                                                { "id": 1, "name": "Category A" }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: {
+                        description: "Invalid Query Parameters",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            post: {
+                tags: ["Categories"],
+                summary: "Create a new category. Admin - Editor action",
+                description:
+                    "Returns a new created Category. Require an authenticated user with admin or editor role",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    description: "JSON with category data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["name"],
+                                properties: {
+                                    name: { type: "string" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description:
+                            "JSON response of a successful creation of a new category",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Category",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Invalid request body data",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin - editor authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                    409: {
+                        description: "Category already exists",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityAlreadyExists",
+                                    message: "Duplicate entry on unique field.",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        "/api/v1/categories/{id}": {
+            get: {
+                tags: ["Categories"],
+                summary: "Retrieve a category by its ID",
+                description: "Fetches the details of a specific category using its unique identifier. Returns a 404 error if the category does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        description: "ID of the category to find",
+                        schema: { type: "integer" },
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Category by id",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Category",
+                                        }
+                                    }
+                                },
+                            },
+                        }
+                    },
+                    400: {
+                        description: "Invalid Category ID",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Category Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Category with id: 1 not found",
+                                },
+                            },
+                        },
+                    },
+                }
+            },
+            patch: {
+                tags: ["Categories"],
+                summary: "Update a category by its ID. Admin - Editor action.",
+                description: "Updates the properties of a specific category identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN or EDITOR roles are authorized. Returns a 404 error if the category does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        description: "ID of the category to update",
+                        schema: { type: "integer" },
+                    },
+                ],
+                requestBody: {
+                    description: "JSON with the updated category data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["name"],
+                                properties: {
+                                    name: { type: "string" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description:
+                            "JSON response of a successful update of the category",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Category",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: "Invalid request body data",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin or editor authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Category Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Category with id: 1 not found",
+                                },
+                            },
+                        },
+                    },
+                    409: {
+                        description: "Category already exists",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityAlreadyExists",
+                                    message: "Duplicate entry on unique field.",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            delete: {
+                tags: ["Categories"],
+                summary: "Delete a category by its ID. Admin - Editor action",
+                description: "Permanently deletes the specified category from the database using its unique ID. Only users with ADMIN or EDITOR roles are authorized. Returns a 204 No Content status if successful or a 404 error if the category does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        description: "ID of the category to find",
+                        schema: { type: "integer" },
+                    },
+                ],
+                responses: {
+                    204: {
+                        description:
+                            "Category deleted successfully. No content is returned.",
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin or editor authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Category Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Category with id: 1 not found",
+                                },
+                            },
+                        },
+                    },
+                },
+            }
+        }
     }
 }
