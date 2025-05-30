@@ -1078,10 +1078,10 @@ export const swaggerOptions: OpenAPIV3.Document = {
             },
         },
         "/api/v1/profiles/{id}": {
-            patch: {
+            get: {
                 tags: ["Profiles"],
-                summary: "Update a profile by its ID. Admin action",
-                description: "Updates the properties of a specific profile identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN role are authorized. Returns a 404 error if the profile does not exist.",
+                summary: "Retrieve a profile by its ID",
+                description: "Fetches the details of a specific profile using its unique identifier. Returns a 404 error if the profile does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
                     {
@@ -1092,26 +1092,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                         schema: { type: "integer" },
                     },
                 ],
-                requestBody: {
-                    description: "JSON with profile data",
-                    required: true,
-                    content: {
-                        "application/json": {
-                            schema: {
-                                type: "object",
-                                required: ["bio"],
-                                properties: {
-                                    firstname: { type: "string" },
-                                    lastname: { type: "string" },
-                                    picUrl: { type: "string" },
-                                },
-                            },
-                        },
-                    },
-                },
                 responses: {
                     200: {
-                        description: "Successful Update Profile by id",
+                        description: "Profile by id",
                         content: {
                             "application/json": {
                                 schema: {
@@ -1170,10 +1153,10 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     },
                 }
             },
-            get: {
+            patch: {
                 tags: ["Profiles"],
-                summary: "Retrieve a profile by its ID",
-                description: "Fetches the details of a specific profile using its unique identifier. Returns a 404 error if the profile does not exist.",
+                summary: "Update a profile by its ID. Admin action",
+                description: "Updates the properties of a specific profile identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN role are authorized. Returns a 404 error if the profile does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
                     {
@@ -1184,9 +1167,27 @@ export const swaggerOptions: OpenAPIV3.Document = {
                         schema: { type: "integer" },
                     },
                 ],
+                requestBody: {
+                    description: "JSON with profile data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["bio"],
+                                properties: {
+                                    firstname: { type: "string" },
+                                    lastname: { type: "string" },
+                                    bio: { type: "string" },
+                                    picUrl: { type: "string" },
+                                },
+                            },
+                        },
+                    },
+                },
                 responses: {
                     200: {
-                        description: "Profile by id",
+                        description: "Successful Update Profile by id",
                         content: {
                             "application/json": {
                                 schema: {
@@ -1299,6 +1300,666 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     },
                 }
             }
-        }
+        },
+        "/api/v1/comments": {
+            get: {
+                tags: ["Comments"],
+                summary: "Get all comments in a list. Admin Action",
+                description:
+                    "Returns a list of all comments, optionally paginated. Support filtering by comment status.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "status",
+                        in: "query",
+                        description: "Filter by one or more comment status values. You can repeat the parameter (?status=ACTIVE&status=INACTIVE) or provide a single value.",
+                        required: false,
+                        style: "form",
+                        explode: true,
+                        schema: {
+                            type: "array",
+                            items: {
+                                type: "string",
+                                enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
+                            },
+                        },
+                        example: ["ACTIVE", "INACTIVE"],
+                    },
+                    {
+                        name: "paginated",
+                        in: "query",
+                        description: "Set to true to paginate results.",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            enum: ["true", "false"],
+                            default: "false"
+                        }
+                    },
+                    {
+                        name: "page",
+                        in: "query",
+                        description: "Page number (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "1"
+                        }
+                    },
+                    {
+                        name: "limit",
+                        in: "query",
+                        description: "Number of results per page (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "50"
+                        }
+                    }
+                ],
+                responses: {
+                    200: {
+                        description: "List of all comments or paginated comments with optional filters",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                results: { "type": "integer", "example": 2 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Comment" }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                totalItems: { "type": "integer", "example": 16 },
+                                                totalPages: { "type": "integer", "example": 4 },
+                                                currentPage: { "type": "integer", "example": 1 },
+                                                limit: { "type": "integer", "example": 5 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Profile" }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                            }
+                        }
+                    },
+                    400: {
+                        description: "Invalid Query Parameters",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        "/api/v1/comments/{uuid}": {
+            get: {
+                tags: ["Comments"],
+                summary: "Retrieve a comment by its UUID",
+                description: "Fetches the details of a specific comment using its unique identifier. Returns a 404 error if the comment does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "uuid",
+                        in: "path",
+                        required: true,
+                        description: "UUID of the comment to find",
+                        schema: { type: "string" },
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Comment by uuid",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Comment",
+                                        }
+                                    }
+                                },
+                            },
+                        }
+                    },
+                    400: {
+                        description: "Invalid Profile UUID",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Comment Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Comment with uuid: cef1b4d6-03d7-4a28-a9db-4493301c7e9e not found",
+                                },
+                            },
+                        },
+                    },
+                }
+            },
+            patch: {
+                tags: ["Comments"],
+                summary: "Update a comment by its UUID. Admin action",
+                description: "Updates the properties of a specific comment identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN role are authorized. Returns a 404 error if the profile does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "uuid",
+                        in: "path",
+                        required: true,
+                        description: "UUID of the comment to find",
+                        schema: { type: "string" },
+                    },
+                ],
+                requestBody: {
+                    description: "JSON with the updated comment data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["title"],
+                                properties: {
+                                    title: {type: "string"},
+                                    status: {
+                                        type: "string",
+                                        enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
+                                    },
+                                }
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Successful Update Comment by its UUID",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Comment",
+                                        }
+                                    }
+                                },
+                            },
+                        }
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Profile Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Profile with id: 1 not found",
+                                },
+                            },
+                        },
+                    },
+                }
+            },
+            delete: {
+                tags: ["Comments"],
+                summary: "Delete a comment by its UUID. Admin action",
+                description: "Permanently deletes the specified comment from the database using its unique UUID. Only users with ADMIN role are authorized. Returns a 204 No Content status if successful or a 404 error if the comment does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "uuid",
+                        in: "path",
+                        required: true,
+                        description: "UUID of the comment to find",
+                        schema: { type: "string" },
+                    },
+                ],
+                responses: {
+                    204: {
+                        description:
+                            "Comment deleted successfully. No content is returned.",
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Comment Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Comment with uuid: cef1b4d6-03d7-4a28-a9db-4493301c7e9e not found",
+                                },
+                            },
+                        },
+                    },
+                }
+            }
+        },
+        "/api/v1/comments/user/{uuid}": {
+            get: {
+                tags: ["Comments"],
+                summary: "Retrieve all comments of a specific user by its unique UUID. Admin Action",
+                description:
+                    "Returns a list of all comments of a specific user, optionally paginated. Support filtering by comment status.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "uuid",
+                        in: "path",
+                        required: true,
+                        description: "UUID of the user to find its comments",
+                        schema: { type: "string" },
+                    },
+                    {
+                        name: "status",
+                        in: "query",
+                        description: "Filter by one or more comment status values. You can repeat the parameter (?status=ACTIVE&status=INACTIVE) or provide a single value.",
+                        required: false,
+                        style: "form",
+                        explode: true,
+                        schema: {
+                            type: "array",
+                            items: {
+                                type: "string",
+                                enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
+                            },
+                        },
+                        example: ["ACTIVE", "INACTIVE"],
+                    },
+                    {
+                        name: "paginated",
+                        in: "query",
+                        description: "Set to true to paginate results.",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            enum: ["true", "false"],
+                            default: "false"
+                        }
+                    },
+                    {
+                        name: "page",
+                        in: "query",
+                        description: "Page number (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "1"
+                        }
+                    },
+                    {
+                        name: "limit",
+                        in: "query",
+                        description: "Number of results per page (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "50"
+                        }
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "List of all comments of a specific user by its unique UUID or paginated comments with optional filters",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                results: { "type": "integer", "example": 2 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Comment" }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                totalItems: { "type": "integer", "example": 16 },
+                                                totalPages: { "type": "integer", "example": 4 },
+                                                currentPage: { "type": "integer", "example": 1 },
+                                                limit: { "type": "integer", "example": 5 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Profile" }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                            }
+                        }
+                    },
+                    400: {
+                        description: "Invalid Query Parameters",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "User Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "User with uuid: cef1b4d6-03d7-4a28-a9db-4493301c7e9e not found",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        "/api/v1/comments/post/{uuid}": {
+            get: {
+                tags: ["Comments"],
+                summary: "Retrieve all comments of a specific post by its unique UUID. Admin Action",
+                description:
+                    "Returns a list of all comments of a specific post, optionally paginated. Support filtering by comment status.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "uuid",
+                        in: "path",
+                        required: true,
+                        description: "UUID of the post to find its comments",
+                        schema: { type: "string" },
+                    },
+                    {
+                        name: "status",
+                        in: "query",
+                        description: "Filter by one or more comment status values. You can repeat the parameter (?status=ACTIVE&status=INACTIVE) or provide a single value.",
+                        required: false,
+                        style: "form",
+                        explode: true,
+                        schema: {
+                            type: "array",
+                            items: {
+                                type: "string",
+                                enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
+                            },
+                        },
+                        example: ["ACTIVE", "INACTIVE"],
+                    },
+                    {
+                        name: "paginated",
+                        in: "query",
+                        description: "Set to true to paginate results.",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            enum: ["true", "false"],
+                            default: "false"
+                        }
+                    },
+                    {
+                        name: "page",
+                        in: "query",
+                        description: "Page number (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "1"
+                        }
+                    },
+                    {
+                        name: "limit",
+                        in: "query",
+                        description: "Number of results per page (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "50"
+                        }
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "List of all comments of a specific post by its unique UUID or paginated comments with optional filters",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                results: { "type": "integer", "example": 2 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Comment" }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                totalItems: { "type": "integer", "example": 16 },
+                                                totalPages: { "type": "integer", "example": 4 },
+                                                currentPage: { "type": "integer", "example": 1 },
+                                                limit: { "type": "integer", "example": 5 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Profile" }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                            }
+                        }
+                    },
+                    400: {
+                        description: "Invalid Query - Path Parameters",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Post Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Post with uuid: cef1b4d6-03d7-4a28-a9db-4493301c7e9e not found",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     }
 }
