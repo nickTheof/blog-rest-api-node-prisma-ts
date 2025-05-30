@@ -11,7 +11,7 @@ export const verifyToken = async (req: Request, res: AuthResponse, next: NextFun
     if (!token) {
         return next(new AppError("EntityNotAuthorized",'No token provided'));
     }
-    const payload = authService.verifyAccessToken(token);
+    const payload = await authService.verifyAccessToken(token);
     if (payload) {
         if (!payload.isVerified) {
             return next(new AppError("EntityNotAuthorized",'Token is not valid'));

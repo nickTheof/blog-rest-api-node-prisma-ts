@@ -7,6 +7,7 @@ import {UserTokenPayload, UserForTokenVerification, VerifyTokenResponse} from ".
 import {formatUser} from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
 
+
 const generateAccessToken = (user: UserTokenPayload): string => {
     const secret: jwt.Secret = config.JSONWEBTOKEN_SECRET;
     const options: jwt.SignOptions = {
@@ -19,10 +20,18 @@ const generateAccessToken = (user: UserTokenPayload): string => {
     return  jwt.sign(serializableTokenPayload, secret, options);
 }
 
-const verifyAccessToken = (token: string) : VerifyTokenResponse => {
+const verifyAccessToken = async (token: string) : Promise<VerifyTokenResponse> => {
     const secret: jwt.Secret = config.JSONWEBTOKEN_SECRET;
     try {
         const payload = jwt.verify(token, secret);
+        const userTokenPayload = payload as UserTokenPayload;
+        const currentUser: User | null =  await userService.getById(userTokenPayload.id);
+        if (!currentUser || !currentUser.isActive) {
+            return {
+                isVerified: false,
+                data: "User is not active"
+            }
+        }
         return {
             isVerified: true,
             data: payload as UserTokenPayload,
@@ -44,7 +53,7 @@ const verifyAccessToken = (token: string) : VerifyTokenResponse => {
 
 const loginUser = async (loginDto: LoginDTOSchema): Promise<{ status: string, data?: string, message?: string }> => {
     const user: UserForTokenVerification | null = await userService.getByEmail(loginDto.email);
-    if (!user) {
+    if (!user || !user.isActive) {
         return {
             status: "error",
             message: "User not found",
