@@ -4,7 +4,7 @@ import userService from "./user.service";
 import SecUtil from "../utils/SecUtil";
 import {LoginDTOSchema, RegisterDTOSchema} from "../types/zod-schemas.types";
 import {UserTokenPayload, UserForTokenVerification, VerifyTokenResponse} from "../types/user-auth.types";
-import {formatUsers} from "../utils/helpers/response.helpers";
+import {formatUser} from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
 
 const generateAccessToken = (user: UserTokenPayload): string => {
@@ -12,7 +12,11 @@ const generateAccessToken = (user: UserTokenPayload): string => {
     const options: jwt.SignOptions = {
         expiresIn: config.JWT_EXPIRATION_TIME,
     }
-    return  jwt.sign(user, secret, options);
+    const serializableTokenPayload = {
+        ...user,
+        id: user.id.toString(),
+    }
+    return  jwt.sign(serializableTokenPayload, secret, options);
 }
 
 const verifyAccessToken = (token: string) : VerifyTokenResponse => {
@@ -68,7 +72,7 @@ const registerUser = async (data: RegisterDTOSchema) => {
     });
     return {
         status: 'success',
-        data: formatUsers([user])[0]
+        data: formatUser(user)
     }
 }
 

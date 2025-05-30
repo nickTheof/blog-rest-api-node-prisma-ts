@@ -5,6 +5,7 @@ export type UserTokenPayload = {
     role: Role;
     isActive: boolean;
     uuid: string;
+    id: bigint;
 }
 
 export type UserForTokenVerification = UserTokenPayload & {

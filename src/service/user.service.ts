@@ -39,7 +39,7 @@ const getByUuid = async (uuid: string): Promise<User | null> => {
 }
 
 const getByEmail = async (email: string): Promise<UserForTokenVerification | null> => {
-    return prisma.user.findUnique({where: {email}, select: {uuid: true, email: true, role: true, isActive: true, password: true}});
+    return prisma.user.findUnique({where: {email}, select: {id: true, uuid: true, email: true, role: true, isActive: true, password: true}});
 }
 
 const create = async (data: CreateUserSchema): Promise<User> => {

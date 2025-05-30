@@ -7,7 +7,7 @@ import {AppError} from "../utils/AppError";
 import userService from "../service/user.service";
 import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
-import {getAuthenticatedProfile, getAuthenticatedUser} from "../utils/helpers/auth-profile.helpers";
+import {getAuthenticatedProfile} from "../utils/helpers/auth-profile.helpers";
 import {
     formatProfile,
     formatProfiles,
@@ -78,18 +78,14 @@ const createAuthenticatedUserProfile = catchAsync(async (req: Request, res: Resp
     return sendSuccessResponse(res, formattedProfile, 201)
 })
 
-//TODO Add userId in token payload and use it to delete profile by user id
-
 const deleteAuthenticatedUserProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user: User = await getAuthenticatedUser(res, next);
+    const user: UserTokenPayload = res.locals.user;
     await profileService.deleteById(user.id);
     return sendSuccessResponse(res, null, 204);
 })
 
-
-//TODO add userId in token payload and use it to update profile by user id
 const updateAuthenticatedUserProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user: User = await getAuthenticatedUser(res, next);
+    const user: UserTokenPayload = res.locals.user;
     const updatedProfile: ProfileWithUser = await profileService.update(user.id, req.body);
     const formattedProfile: FormattedEntityData = formatProfile(updatedProfile);
     return sendSuccessResponse(res, formattedProfile, 200);
