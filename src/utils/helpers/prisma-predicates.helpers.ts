@@ -1,5 +1,5 @@
 import {PaginationQuery} from "../../types/zod-schemas.types";
-import {PostStatus, Prisma} from "@prisma/client";
+import {CommentStatus, PostStatus, Prisma} from "@prisma/client";
 
 type findManyArgsPagination = {
     skip?: number,
@@ -52,5 +52,41 @@ export const generateFilterActiveUsersWhere = (isActive?: boolean): activeUsersW
         return where;
     }
     where.isActive = isActive;
+    return where;
+}
+
+type AuthorWhere = {
+    author?: {
+        uuid: string
+    }
+}
+
+export const generateAuthorWhere = (authorUuid?: string ): AuthorWhere => {
+    const where: AuthorWhere = {};
+    if (authorUuid) {
+        where.author = { uuid: authorUuid };
+    }
+    return where;
+}
+
+type postWhere = {
+    post?: {
+        uuid: string
+    }
+}
+
+export const generatePostWhere = (postUuid?: string ): postWhere => {
+    const where: postWhere = {};
+    if (postUuid) {
+        where.post = { uuid: postUuid };
+    }
+    return where;
+}
+
+export const generateFilterCommentStatusWhere = (status?: CommentStatus[]): Prisma.CommentWhereInput => {
+    const where: Prisma.CommentWhereInput = {};
+    if (status && status.length > 0) {
+        where.status = { in: status as CommentStatus[] };
+    }
     return where;
 }
