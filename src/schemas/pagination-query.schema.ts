@@ -1,6 +1,6 @@
 
 import { z } from 'zod';
-import {PostStatus} from "@prisma/client";
+import {CommentStatus, PostStatus} from "@prisma/client";
 
 export const paginationQuerySchema = z.object({
     paginated: z.string().default("false").transform(val => val === "true"),
@@ -30,4 +30,9 @@ export const filterUsersPaginationQuerySchema = paginationQuerySchema.extend(({
         .string()
         .transform((val) => val === "true" || val === "1")
         .optional()
+}))
+
+export const filterCommentsPaginationQuerySchema = paginationQuerySchema.extend(({
+    status: z.union([z.nativeEnum(CommentStatus), z.array(z.nativeEnum(CommentStatus))]).optional()
+        .transform(val => val ? (Array.isArray(val) ? val : [val]) : undefined)
 }))
