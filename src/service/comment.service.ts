@@ -1,120 +1,91 @@
 import prisma from "../prisma/client";
-import {Comment} from "@prisma/client";
-import {CommentCreateSchema, CommentUpdateSchema, PaginationQuery} from "../types/zod-schemas.types";
+import {Comment, CommentStatus, Prisma} from "@prisma/client";
+import {
+    CommentCreateSchema,
+    CommentUpdateSchema,
+    FilterCommentsPaginationQuery,
+} from "../types/zod-schemas.types";
 import {CommentWithAuthor, CommentWithAuthorAndPost, CommentWithPost} from "../controller/comment.controller";
+import {
+    generateAuthorWhere, generateFilterCommentStatusWhere,
+    generatePaginationQuery,
+    generatePostWhere
+} from "../utils/helpers/prisma-predicates.helpers";
 
-const getAll = (): Promise<CommentWithAuthorAndPost[]> => {
+const getAll = (query: FilterCommentsPaginationQuery): Promise<CommentWithAuthorAndPost[]> => {
+    const queryPaginationArgs: Prisma.CommentFindManyArgs = generatePaginationQuery(query);
+    const filterStatusWhere: Prisma.CommentWhereInput = generateFilterCommentStatusWhere(query.status);
     return prisma.comment.findMany({
-        include: {
-            author: true,
-            post: true,
-        }
-    });
-}
-
-const countAll = (): Promise<number> => {
-    return prisma.comment.count()
-}
-
-const getAllPaginated = (query: PaginationQuery): Promise<CommentWithAuthorAndPost[]> => {
-    return prisma.comment.findMany({
+        where: filterStatusWhere,
+        ...queryPaginationArgs,
         include: {
             author: true,
             post: true,
         },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit
     })
 }
 
-const getAllByUserUuid = (userUuid: string): Promise<CommentWithPost[]> => {
-    return prisma.comment.findMany({
-        where: {
-            author: {
-                uuid: userUuid,
-            }
-        },
-        include: {
-            post: true,
-        }
-    })
-}
-
-const countAllByUserUuid = (userUuid: string): Promise<number> => {
+const countAll = (query: FilterCommentsPaginationQuery, userUuid?: string, postUuid?: string): Promise<number> => {
+    const filterStatusWhere: Prisma.CommentWhereInput = generateFilterCommentStatusWhere(query.status);
+    const authorWhere: Prisma.CommentWhereInput = generateAuthorWhere(userUuid);
+    const postWhere: Prisma.CommentWhereInput = generatePostWhere(postUuid);
     return prisma.comment.count({
         where: {
-            author: {
-                uuid: userUuid,
-            }
+            ...filterStatusWhere,
+            ...authorWhere,
+            ...postWhere,
         }
     })
 }
 
-const getAllByUserUuidPaginated = (userUuid: string, query: PaginationQuery): Promise<CommentWithPost[]> => {
+
+const getAllByUserUuid = (userUuid: string, query: FilterCommentsPaginationQuery): Promise<CommentWithPost[]> => {
+    const paginationArgs: Prisma.CommentFindManyArgs = generatePaginationQuery(query);
+    const authorWhere: Prisma.CommentWhereInput = generateAuthorWhere(userUuid);
+    const filterStatusWhere: Prisma.CommentWhereInput = generateFilterCommentStatusWhere(query.status);
     return prisma.comment.findMany({
         where: {
-            author: {
-                uuid: userUuid,
-            }
+            ...authorWhere,
+            ...filterStatusWhere
         },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
+        ...paginationArgs,
         include: {
             post: true,
         }
     })
 }
 
-const getAllByPostUuid = (postUuid: string): Promise<CommentWithAuthor[]> => {
+
+const getAllByPostUuid = (postUuid: string, query: FilterCommentsPaginationQuery): Promise<CommentWithAuthor[]> => {
+    const paginationArgs: Prisma.CommentFindManyArgs = generatePaginationQuery(query);
+    const postWhere: Prisma.CommentWhereInput = generatePostWhere(postUuid);
+    const filterStatusWhere: Prisma.CommentWhereInput = generateFilterCommentStatusWhere(query.status);
     return prisma.comment.findMany({
         where: {
-            post: {
-                uuid: postUuid,
-            }
+            ...postWhere,
+            ...filterStatusWhere
         },
+        ...paginationArgs,
         include: {
             author: true,
         }
     })
 }
 
-const getAllByPostUuidPaginated = (postUuid: string, query: PaginationQuery): Promise<CommentWithAuthor[]> => {
-    return prisma.comment.findMany({
+const getById = (id: bigint, status: CommentStatus = CommentStatus.ACTIVE): Promise<Comment | null> => {
+    return prisma.comment.findUnique({
         where: {
-            post: {
-                uuid: postUuid,
-            }
-        },
-        include: {
-            author: true,
-        },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit
-    })
-}
-
-const countAllByPostUuid = (postUuid: string): Promise<number> => {
-    return prisma.comment.count({
-        where: {
-            post: {
-                uuid: postUuid,
-            }
+            id,
+            status
         }
     })
 }
 
-const getById = (id: bigint): Promise<Comment | null> => {
+const getByUuid = (uuid: string, status: CommentStatus = CommentStatus.ACTIVE): Promise<CommentWithAuthorAndPost | null> => {
     return prisma.comment.findUnique({
         where: {
-            id: id
-        }
-    })
-}
-
-const getByUuid = (uuid: string): Promise<CommentWithAuthorAndPost | null> => {
-    return prisma.comment.findUnique({
-        where: {
-            uuid: uuid
+            uuid,
+            status
         },
         include: {
             author: true,
@@ -177,13 +148,8 @@ const deleteByUuid = (uuid: string): Promise<Comment> => {
 export default {
     getAll,
     countAll,
-    getAllPaginated,
     getAllByUserUuid,
     getAllByPostUuid,
-    getAllByPostUuidPaginated,
-    getAllByUserUuidPaginated,
-    countAllByPostUuid,
-    countAllByUserUuid,
     getById,
     getByUuid,
     create,
