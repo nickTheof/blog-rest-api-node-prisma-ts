@@ -56,7 +56,7 @@ const loginUser = async (loginDto: LoginDTOSchema): Promise<{ status: string, da
     if (!user || !user.isActive) {
         return {
             status: "error",
-            message: "User not found",
+            message: "Invalid credentials",
         }
     } else {
         const isPasswordValid = await SecUtil.verifyPassword(loginDto.password, user.password);
