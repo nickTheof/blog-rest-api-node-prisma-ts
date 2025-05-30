@@ -235,21 +235,25 @@ export const swaggerOptions: OpenAPIV3.Document = {
             description: "Endpoints for Authentication",
         },
         {
-            name: "Users",
-            description: "Endpoints for Users",
-        },
-        {
             name: "Categories",
             description: "Endpoints for Categories",
+        },
+        {
+            name: "Comments",
+            description: "Endpoints for Comments",
         },
         {
             name: "Posts",
             description: "Endpoints for Posts",
         },
         {
-            name: "Comments",
-            description: "Endpoints for Comments",
-        }
+            name: "Profiles",
+            description: "Endpoints for Profiles",
+        },
+        {
+            name: "Users",
+            description: "Endpoints for Users",
+        },
     ],
     paths: {
         "/api/v1/auth/login": {
@@ -866,6 +870,434 @@ export const swaggerOptions: OpenAPIV3.Document = {
                         },
                     },
                 },
+            }
+        },
+        "/api/v1/users":{
+
+        },
+        "/api/v1/profiles": {
+            get: {
+                tags: ["Profiles"],
+                summary: "Get all profiles in a list. Admin Action",
+                description:
+                    "Returns a list of all profiles, optionally paginated.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "paginated",
+                        in: "query",
+                        description: "Set to true to paginate results.",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            enum: ["true", "false"],
+                            default: "false"
+                        }
+                    },
+                    {
+                        name: "page",
+                        in: "query",
+                        description: "Page number (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "1"
+                        }
+                    },
+                    {
+                        name: "limit",
+                        in: "query",
+                        description: "Number of results per page (paginated mode only).",
+                        required: false,
+                        schema: {
+                            type: "string",
+                            default: "50"
+                        }
+                    }
+                ],
+                responses: {
+                    200: {
+                        description: "List of all profiles or paginated profiles",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                results: { "type": "integer", "example": 2 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Profile" }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: { "type": "string", "example": "success" },
+                                                totalItems: { "type": "integer", "example": 16 },
+                                                totalPages: { "type": "integer", "example": 4 },
+                                                currentPage: { "type": "integer", "example": 1 },
+                                                limit: { "type": "integer", "example": 5 },
+                                                data: {
+                                                    type: "array",
+                                                    items: { "$ref": "#/components/schemas/Profile" }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                examples: {
+                                    nonPaginated: {
+                                        summary: "Non-paginated list",
+                                        value: {
+                                            status: "success",
+                                            results: 2,
+                                            data: [
+                                                { "id": 1,
+                                                    "firstname": "John",
+                                                    "lastname": "Doe",
+                                                    "bio": "Software developer and tech enthusiast.",
+                                                    "picUrl": "https://example.com/images/profile1.jpg",
+                                                    "user": {
+                                                        "id": 1,
+                                                        "email": "john.doe@example.com",
+                                                        "password": "hashed_password_here",
+                                                        "role": "USER",
+                                                        "isActive": true,
+                                                        "uuid": "e4d1a9c2-efb2-489b-b627-23eb7e167c33",
+                                                        "createdAt": "2024-05-29T12:00:00Z",
+                                                        "updatedAt": "2024-05-29T12:00:00Z",
+                                                        "deletedAt": null,
+                                                        "profile": null,
+                                                        "posts": [],
+                                                        "comments": []
+                                                    }
+                                                    },
+                                                { "id": 2,
+                                                    "firstname": null,
+                                                    "lastname": null,
+                                                    "bio": "Just another user.",
+                                                    "picUrl": null,
+                                                    "user": {
+                                                        "id": 2,
+                                                        "email": "user2@example.com",
+                                                        "password": "hashed_pw",
+                                                        "role": "USER",
+                                                        "isActive": true,
+                                                        "uuid": "b7e5ac34-1e43-4138-a843-8b2a45ab1d44",
+                                                        "createdAt": "2024-05-29T12:00:00Z",
+                                                        "updatedAt": "2024-05-29T12:00:00Z",
+                                                        "deletedAt": null,
+                                                        "profile": null,
+                                                        "posts": [],
+                                                        "comments": []
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    paginated: {
+                                        summary: "Paginated list",
+                                        value: {
+                                            status: "success",
+                                            totalItems: 16,
+                                            totalPages: 4,
+                                            currentPage: 1,
+                                            limit: 5,
+                                            data: [
+                                                { "id": 1,
+                                                    "firstname": "John",
+                                                    "lastname": "Doe",
+                                                    "bio": "Software developer and tech enthusiast.",
+                                                    "picUrl": "https://example.com/images/profile1.jpg",
+                                                    "user": {
+                                                        "id": 1,
+                                                        "email": "john.doe@example.com",
+                                                        "password": "hashed_password_here",
+                                                        "role": "USER",
+                                                        "isActive": true,
+                                                        "uuid": "e4d1a9c2-efb2-489b-b627-23eb7e167c33",
+                                                        "createdAt": "2024-05-29T12:00:00Z",
+                                                        "updatedAt": "2024-05-29T12:00:00Z",
+                                                        "deletedAt": null,
+                                                        "profile": null,
+                                                        "posts": [],
+                                                        "comments": []
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: {
+                        description: "Invalid Query Parameters",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        "/api/v1/profiles/{id}": {
+            patch: {
+                tags: ["Profiles"],
+                summary: "Update a profile by its ID. Admin action",
+                description: "Updates the properties of a specific profile identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN role are authorized. Returns a 404 error if the profile does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        description: "ID of the profile to find",
+                        schema: { type: "integer" },
+                    },
+                ],
+                requestBody: {
+                    description: "JSON with profile data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["bio"],
+                                properties: {
+                                    firstname: { type: "string" },
+                                    lastname: { type: "string" },
+                                    picUrl: { type: "string" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: "Successful Update Profile by id",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Profile",
+                                        }
+                                    }
+                                },
+                            },
+                        }
+                    },
+                    400: {
+                        description: "Invalid Profile ID",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Profile Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Profile with id: 1 not found",
+                                },
+                            },
+                        },
+                    },
+                }
+            },
+            get: {
+                tags: ["Profiles"],
+                summary: "Retrieve a profile by its ID",
+                description: "Fetches the details of a specific profile using its unique identifier. Returns a 404 error if the profile does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        description: "ID of the profile to find",
+                        schema: { type: "integer" },
+                    },
+                ],
+                responses: {
+                    200: {
+                        description: "Profile by id",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Profile",
+                                        }
+                                    }
+                                },
+                            },
+                        }
+                    },
+                    400: {
+                        description: "Invalid Profile ID",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "ValidationError",
+                                    message: "Invalid input.",
+                                    errors: {
+                                        type: "array",
+                                        items: {
+                                            type: "string"
+                                        }
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Profile Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Profile with id: 1 not found",
+                                },
+                            },
+                        },
+                    },
+                }
+            },
+            delete: {
+                tags: ["Profiles"],
+                summary: "Delete a profile by its ID. Admin action",
+                description: "Permanently deletes the specified profile from the database using its unique ID. Only users with ADMIN role are authorized. Returns a 204 No Content status if successful or a 404 error if the profile does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        name: "id",
+                        in: "path",
+                        required: true,
+                        description: "ID of the profile to find",
+                        schema: { type: "integer" },
+                    },
+                ],
+                responses: {
+                    204: {
+                        description:
+                            "Profile deleted successfully. No content is returned.",
+                    },
+                    401: {
+                        description: "Access restriction to not authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotAuthorized",
+                                    message: "No token provided",
+                                },
+                            },
+                        },
+                    },
+                    403: {
+                        description: "Access restriction to not admin authenticated users",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityForbiddenAction",
+                                    message: "You are not authorized to perform this action",
+                                },
+                            },
+                        },
+                    },
+                    404: {
+                        description: "Profile Not Found",
+                        content: {
+                            "application/json": {
+                                example: {
+                                    status: "EntityNotFound",
+                                    message: "Profile with id: 1 not found",
+                                },
+                            },
+                        },
+                    },
+                }
             }
         }
     }
