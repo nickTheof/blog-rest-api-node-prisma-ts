@@ -316,7 +316,26 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         },
                     },
-                    401: responserError401,
+                    401: {
+                        description: "Invalid credentials",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "error",
+                                        },
+                                        message: {
+                                            type: "string",
+                                            example: "Invalid credentials",
+                                        },
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             },
         },
@@ -696,6 +715,105 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 }
             }
         },
+        "/api/v1/users/me": {
+            get: {
+                tags: ["Users"],
+                summary: "Get the current user",
+                description: "Returns the details of the currently authenticated user.",
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "Current authenticated user details",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/User",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    401: responserError401,
+                }
+            },
+            patch: {
+                tags: ["Users"],
+                summary: "Update the current user",
+                description: "Updates the properties of the currently authenticated user. Accepts a JSON object with the fields to be updated. Returns a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    description: "JSON with the updated user data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: [],
+                                properties: {
+                                    email: { type: "string" },
+                                    role: {
+                                        type: "string",
+                                        enum: [
+                                            "USER", "EDITOR", "ADMIN"
+                                        ]
+                                    },
+                                    isActive: {
+                                        type: "boolean",
+                                        default: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description:
+                            "JSON response of a successful update of the user",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/User",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid request body data"),
+                    401: responserError401,
+                    409: responserError409Conflict("User"),
+                }
+            },
+            delete: {
+                tags: ["Users"],
+                summary: "Delete the current user",
+                description: "Soft deletes the currently authenticated user from the database. Returns a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    204: {
+                        description:
+                            "User deleted successfully. No content is returned.",
+                    },
+                    401: responserError401,
+                }
+            }
+        },
         "/api/v1/users/{uuid}": {
             get: {
                 tags: ["Users"],
@@ -868,6 +986,114 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 }
             }
         },
+        "/api/v1/users/me/posts": {
+            get: {
+                tags: ["Users", "Posts"],
+                summary: "Get all posts by current user",
+                description: "Returns a list of all posts for the currently authenticated user or paginated posts for the currently authenticated user. Support filtering by post status.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    postStatusParam,
+                    ...paginationSchemaParams
+                ],
+                responses: {
+                    200: {
+                        description: "List of all posts or paginated posts",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: {"type": "string", "example": "success"},
+                                                results: {"type": "integer", "example": 2},
+                                                data: {
+                                                    type: "array",
+                                                    items: {"$ref": "#/components/schemas/Post"}
+                                                }
+                                            }
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: {"type": "string", "example": "success"},
+                                                totalItems: {"type": "integer", "example": 16},
+                                                totalPages: {"type": "integer", "example": 4},
+                                                currentPage: {"type": "integer", "example": 1},
+                                                limit: {"type": "integer", "example": 5},
+                                                data: {
+                                                    type: "array",
+                                                    items: {"$ref": "#/components/schemas/Post"}
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                            }
+                        }
+                    },
+                    401: responserError401,
+                }
+            },
+            post: {
+                tags: ["Users", "Posts"],
+                summary: "Create a post for the current user",
+                description: "Creates a new post for the currently authenticated user. Accepts a JSON object with the post data. Returns a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    description: "JSON with the post data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["title", "description", "status", "categories"],
+                                properties: {
+                                    title: { type: "string" },
+                                    description: { type: "string" },
+                                    status: {
+                                        type: "string",
+                                        enum: [
+                                            "DRAFT", "PUBLISHED", "DELETED", "ARCHIVED"
+                                        ]
+                                    },
+                                    categories: {
+                                        type: "array",
+                                        items: {
+                                            type: "integer",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    201: {
+                        description: "Post created successfully",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Post",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid request body data"),
+                    401: responserError401,
+                }
+            }
+        },
         "/api/v1/users/{uuid}/posts": {
             get: {
                 tags: ["Users", "Posts"],
@@ -920,6 +1146,118 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     401: responserError401,
                     403: responserError403Forbidden(Role.ADMIN),
                     404: responserError404NotFound("User"),
+                }
+            }
+        },
+        "/api/v1/users/me/posts/{uuid}": {
+            get: {
+                tags: ["Users", "Posts"],
+                summary: "Get a post by current user UUID and post UUID",
+                description: "Returns a specific post for the currently authenticated user. Returns a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    postUuidParam
+                ],
+                responses: {
+                    200: {
+                        description: "The details of the created new post",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Post",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    401: responserError401,
+                    404: responserError404NotFound("Post"),
+                }
+            },
+            patch: {
+                tags: ["Users", "Posts"],
+                summary: "Current authenticated user updates its own post by post UUID",
+                description: "Updates the properties of a specific post for the currently authenticated user identified by its unique ID. Accepts a JSON object with the fields to be updated. Returns a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    postUuidParam
+                ],
+                requestBody: {
+                    description: "JSON with the updated post data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: [],
+                                properties: {
+                                    title: { type: "string" },
+                                    description: { type: "string" },
+                                    status: {
+                                        type: "string",
+                                        enum: [
+                                            "DRAFT", "PUBLISHED", "DELETED", "ARCHIVED"
+                                        ]
+                                    },
+                                    categories: {
+                                        type: "array",
+                                        items: {
+                                            type: "integer",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description:
+                            "JSON response of a successful update of the post",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Post",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid request body or path data"),
+                    401: responserError401,
+                    404: responserError404NotFound("Post"),
+                }
+            },
+            delete: {
+                tags: ["Users", "Posts"],
+                summary: "Current authenticated user deletes its own post by post UUID",
+                description: "Current authenticated user soft deletes the specified post from the database for the currently authenticated user using its unique ID. Returns a 204 No Content status if successful or a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    postUuidParam
+                ],
+                responses: {
+                    204: {
+                        description: "Post deleted successfully. No content is returned.",
+                    },
+                    400: responserError400InvalidPathParams,
+                    401: responserError401,
+                    404: responserError404NotFound("Post")
                 }
             }
         },
@@ -995,7 +1333,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                                 required: [],
                                 properties: {
                                     title: { type: "string" },
-                                    content: { type: "string" },
+                                    description: { type: "string" },
                                     status: {
                                         type: "string",
                                         enum: [
@@ -1070,6 +1408,148 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     404: responserError404NotFound("Post or User"),
                 }
             },
+        },
+
+        "/api/v1/users/me/profile": {
+            get: {
+                tags: ["Users", "Profiles"],
+                summary: "Get the current user profile",
+                description: "Returns the details of the currently authenticated user's profile.",
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: {
+                        description: "Current authenticated user profile details",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Profile",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    401: responserError401,
+                }
+            },
+            post: {
+                tags: ["Users", "Profiles"],
+                summary: "Update the current user profile",
+                description: "Updates the properties of the currently authenticated user's profile. Accepts a JSON object with the fields to be updated. Returns a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    description: "JSON with the updated profile data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["bio"],
+                                properties: {
+                                    firstName: { type: "string" },
+                                    lastName: { type: "string" },
+                                    bio: { type: "string" },
+                                    picUrl: { type: "string" },
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description:
+                            "JSON response of a successful update of the profile",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Profile",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid request body data"),
+                    401: responserError401,
+                    409: responserError409Conflict("Profile"),
+                }
+            },
+            patch: {
+                tags: ["Users", "Profiles"],
+                summary: "Update the current user profile",
+                description: "Updates the properties of the currently authenticated user's profile. Accepts a JSON object with the fields to be updated. Returns a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    description: "JSON with the updated profile data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["bio"],
+                                properties: {
+                                    firstName: { type: "string" },
+                                    lastName: { type: "string" },
+                                    bio: { type: "string" },
+                                    picUrl: { type: "string" },
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description:
+                            "JSON response of a successful update of the profile",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Profile",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid request body data"),
+                    401: responserError401,
+                    404: responserError404NotFound("Profile"),
+                }
+            },
+            delete: {
+                tags: ["Users", "Profiles"],
+                summary: "Delete the current user profile",
+                    description: "Permanent delete the currently authenticated user's profile from the database. Returns a 401 error if the user is not authenticated.",
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    204: {
+                        description:
+                            "User profile deleted successfully. No content is returned.",
+                    },
+                    401: responserError401,
+                }
+            }
         },
         "/api/v1/profiles": {
             get: {
@@ -1692,7 +2172,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                                     description: {type: "string"},
                                     status: {
                                         type: "string",
-                                        enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
+                                        enum: ["DRAFT", "PUBLISHED", "DELETED", "ARCHIVED"],
                                     },
                                     categories: {
                                         type: "array",
@@ -1812,6 +2292,25 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 parameters: [
                     postUuidParam
                 ],
+                requestBody: {
+                    description: "JSON with the comment data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["title"],
+                                properties: {
+                                    title: {type: "string"},
+                                    status: {
+                                        type: "string",
+                                        enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
+                                    },
+                                }
+                            }
+                        }
+                    }
+                },
                 responses: {
                     200: {
                         description: "Comment created successfully",
@@ -1863,7 +2362,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                                 type: "object",
                                 required: [],
                                 properties: {
-                                    content: {type: "string"},
+                                    title: {type: "string"},
                                     status: {
                                         type: "string",
                                         enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
