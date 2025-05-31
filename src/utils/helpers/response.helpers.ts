@@ -136,3 +136,24 @@ export const sendSuccessResponse = (res: Response, data: FormattedEntityData | n
     })
 }
 
+export interface ApiResponse<T> {
+    status: string;
+    data: T;
+    [key: string]: any;
+}
+
+export interface ApiPaginatedResponse<T> extends ApiResponse<T>{
+    status: string;
+    totalItems: number;
+    totalPages: number;
+    currentPage: number;
+    limit: number;
+    data: T;
+}
+
+export interface ApiErrorResponse extends ApiResponse<null>{
+    message: string;
+    errors: string[];
+    [key: string]: any;
+}
+
