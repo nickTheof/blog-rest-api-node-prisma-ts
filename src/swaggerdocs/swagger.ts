@@ -13,7 +13,7 @@ import {
     commentUuidParam,
     paginationSchemaParams,
     postStatusParam,
-    postUuidParam, profileIdParam
+    postUuidParam, profileIdParam, userIsActiveParam, userUuidParam
 } from "./params.swagger";
 
 const swaggerDefinition = {
@@ -584,7 +584,492 @@ export const swaggerOptions: OpenAPIV3.Document = {
             }
         },
         "/api/v1/users":{
+            get: {
+                tags: ["Users"],
+                summary: "Get all users in a list",
+                description:
+                    "Returns a list of all users, optionally paginated. Support filtering by user activity status.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    userIsActiveParam,
+                    ...paginationSchemaParams
+                ],
+                responses: {
+                    200: {
+                        description: "List of all users or paginated users",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: {"type": "string", "example": "success"},
+                                                results: {"type": "integer", "example": 2},
+                                                data: {
+                                                    type: "array",
+                                                    items: {"$ref": "#/components/schemas/User"}
+                                                }
+                                            }
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: {"type": "string", "example": "success"},
+                                                totalItems: {"type": "integer", "example": 16},
+                                                totalPages: {"type": "integer", "example": 4},
+                                                currentPage: {"type": "integer", "example": 1},
+                                                limit: {"type": "integer", "example": 5},
+                                                data: {
+                                                    type: "array",
+                                                    items: {"$ref": "#/components/schemas/User"}
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400InvalidQueryParams,
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN)
+                }
+            },
+            post: {
+                tags: ["Users"],
+                summary: "Create a new user. Admin action",
+                description:
+                    "Returns a new created User. Require an authenticated user with admin role",
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    description: "JSON with user data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: ["email", "password"],
+                                properties: {
+                                    email: { type: "string" },
+                                    password: { type: "string" },
+                                    role: {
+                                        type: "string",
+                                        enum: [
+                                            "USER", "EDITOR", "ADMIN"
+                                        ]
+                                    },
+                                    isActive: {
+                                        type: "boolean",
+                                        default: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description:
+                            "JSON response of a successful creation of a new user",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/User",
+                                        },
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid request body data"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    409: responserError409Conflict("User"),
+                }
+            }
+        },
+        "/api/v1/users/{uuid}": {
+            get: {
+                tags: ["Users"],
+                summary: "Retrieve a user by its UUID. Admin Action",
+                description: "Fetches the details of a specific user using its unique identifier. Returns a 404 error if the user does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    userUuidParam
+                ],
+                responses: {
+                    200: {
+                        description: "User by uuid",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                        }
+                                        ,
+                                        data: {
+                                            $ref: "#/components/schemas/User",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400InvalidPathParams,
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("User"),
+                }
+            },
+            patch: {
+                tags: ["Users"],
+                summary: "Update a user by its UUID. Admin action",
+                description: "Updates the properties of a specific user identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN role are authorized. Returns a 404 error if the user does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    userUuidParam
+                ],
+                requestBody: {
+                    description: "JSON with the updated user data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: [],
+                                properties: {
+                                    email: { type: "string" },
+                                    password: { type: "string" },
+                                    role: {
+                                        type: "string",
+                                        enum: [
+                                            "USER", "EDITOR", "ADMIN"
+                                        ]
+                                    },
+                                    isActive: {
+                                        type: "boolean",
+                                        default: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description:
+                            "JSON response of a successful update of the user",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/User",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid request data"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("User"),
+                    409: responserError409Conflict("User"),
+                }
+            },
+            delete: {
+                tags: ["Users"],
+                summary: "Delete a user by its UUID. Admin action",
+                description: "Permanently deletes the specified user from the database using its unique ID. Only users with ADMIN role are authorized. Returns a 204 No Content status if successful or a 404 error if the user does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    userUuidParam
+                ],
+                responses: {
+                    204: {
+                        description:
+                            "User deleted successfully. No content is returned.",
+                    },
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("User"),
+                }
+            }
+        },
+        "/api/v1/users/{uuid}/comments": {
+            get: {
+                tags: ["Users", "Comments"],
+                summary: "Get all comments by user UUID",
+                description: "Returns a list of all comments for a specific user or paginated comments for a specific user. Support filtering by comment status.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    commentStatusParam,
+                    userUuidParam,
+                    ...paginationSchemaParams
+                ],
+                responses: {
+                    200: {
+                        description: "List of all comments or paginated comments",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: {"type": "string", "example": "success"},
+                                                results: {"type": "integer", "example": 2},
+                                                data: {
+                                                    type: "array",
+                                                    items: {"$ref": "#/components/schemas/Comment"}
+                                                }
+                                            }
 
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: {"type": "string", "example": "success"},
+                                                totalItems: {"type": "integer", "example": 16},
+                                                totalPages: {"type": "integer", "example": 4},
+                                                currentPage: {"type": "integer", "example": 1},
+                                                limit: {"type": "integer", "example": 5},
+                                                data: {
+                                                    type: "array",
+                                                    items: {"$ref": "#/components/schemas/Comment"}
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid query or path params"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("User"),
+                }
+            }
+        },
+        "/api/v1/users/{uuid}/posts": {
+            get: {
+                tags: ["Users", "Posts"],
+                summary: "Get all posts by user UUID",
+                description: "Returns a list of all posts for a specific user or paginated posts for a specific user. Support filtering by post status.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    postStatusParam,
+                    userUuidParam,
+                    ...paginationSchemaParams
+                ],
+                responses: {
+                    200: {
+                        description: "List of all posts or paginated posts",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    oneOf: [
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: {"type": "string", "example": "success"},
+                                                results: {"type": "integer", "example": 2},
+                                                data: {
+                                                    type: "array",
+                                                    items: {"$ref": "#/components/schemas/Post"}
+                                                }
+                                            }
+                                        },
+                                        {
+                                            type: "object",
+                                            properties: {
+                                                status: {"type": "string", "example": "success"},
+                                                totalItems: {"type": "integer", "example": 16},
+                                                totalPages: {"type": "integer", "example": 4},
+                                                currentPage: {"type": "integer", "example": 1},
+                                                limit: {"type": "integer", "example": 5},
+                                                data: {
+                                                    type: "array",
+                                                    items: {"$ref": "#/components/schemas/Post"}
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid query or path params"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("User"),
+                }
+            }
+        },
+        "/api/v1/users/{uuid}/posts/{postUuid}": {
+            get: {
+                tags: ["Users", "Posts"],
+                summary: "Get a post by user UUID and post UUID",
+                description: "Returns a specific post for a specific user. Returns a 404 error if the post does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    userUuidParam,
+                    {
+                        name: "postUuid",
+                        description: "UUID of the post.",
+                        in: "path",
+                        required: true,
+                        schema: {
+                            type: "string",
+                        },
+                        example: "123e4567-e89b-12d3-a456-426655440000",
+                    }
+                ],
+                responses: {
+                    200: {
+                        description: "Post by user uuid and post uuid",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Post",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400InvalidPathParams,
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("Post or User"),
+                }
+            },
+            patch: {
+                tags: ["Users", "Posts"],
+                summary: "Update a post by user UUID and post UUID. Admin Action.",
+                description: "Updates the properties of a specific post identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN role are authorized. Returns a 404 error if the post does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    userUuidParam,
+                    {
+                        name: "postUuid",
+                        description: "UUID of the post.",
+                        in: "path",
+                        required: true,
+                        schema: {
+                            type: "string",
+                            example: "123e4567-e89b-12d3-a456-426655440000",
+                        }
+                    }
+                ],
+                requestBody: {
+                    description: "JSON with the updated post data",
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                                required: [],
+                                properties: {
+                                    title: { type: "string" },
+                                    content: { type: "string" },
+                                    status: {
+                                        type: "string",
+                                        enum: [
+                                            "DRAFT", "PUBLISHED", "DELETED", "ARCHIVED"
+                                        ]
+                                    },
+                                    categories: {
+                                        type: "array",
+                                        items: {
+                                            type: "integer",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description:
+                            "JSON response of a successful update of the post",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        status: {
+                                            type: "string",
+                                            example: "success",
+                                        },
+                                        data: {
+                                            $ref: "#/components/schemas/Post",
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: responserError400Validation("Invalid request body or path data"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("Post or User"),
+                    409: responserError409Conflict("Post"),
+                }
+            },
+            delete: {
+                tags: ["Users", "Posts"],
+                summary: "Delete a post by user UUID and post UUID. Admin Action.",
+                description: "Permanently deletes the specified post from the database using its unique ID. Only users with ADMIN role are authorized. Returns a 204 No Content status if successful or a 404 error if the post does not exist.",
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    userUuidParam,
+                    {
+                        name: "postUuid",
+                        description: "UUID of the post.",
+                        in: "path",
+                        required: true,
+                        schema: {
+                            type: "string",
+                            example: "123e4567-e89b-12d3-a456-426655440000",
+                        }
+                    }
+                ],
+                responses: {
+                    204: {
+                        description:
+                            "Post deleted successfully. No content is returned.",
+                    },
+                    400: responserError400InvalidPathParams,
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("Post or User"),
+                }
+            },
         },
         "/api/v1/profiles": {
             get: {
@@ -987,7 +1472,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
         },
         "/api/v1/comments/user/{uuid}": {
             get: {
-                tags: ["Comments"],
+                tags: ["Comments", "Users"],
                 summary: "Retrieve all comments of a specific user by its unique UUID. Admin Action",
                 description:
                     "Returns a list of all comments of a specific user, optionally paginated. Support filtering by comment status.",
@@ -1043,7 +1528,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
         },
         "/api/v1/comments/post/{uuid}": {
             get: {
-                tags: ["Comments"],
+                tags: ["Comments", "Posts"],
                 summary: "Retrieve all comments of a specific post by its unique UUID. Admin Action",
                 description:
                     "Returns a list of all comments of a specific post, optionally paginated. Support filtering by comment status.",
@@ -1269,7 +1754,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
         },
         "/api/v1/posts/{uuid}/comments": {
             get: {
-                tags: ["Posts"],
+                tags: ["Posts", "Comments"],
                 summary: "Retrieve all comments of a specific post by its unique UUID",
                 description: "Returns a list of all comments of a specific post, optionally paginated. Support filtering by comment status.",
                 security: [{ bearerAuth: [] }],
@@ -1320,7 +1805,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 }
             },
             post: {
-                tags: ["Posts"],
+                tags: ["Posts", "Comments"],
                 summary: "Authenticated users creates a comment for a specific post by its UUID",
                 description: "Creates a new comment for a specific post using its unique identifier. Returns a 404 error if the post does not exist.",
                 security: [{ bearerAuth: [] }],
@@ -1355,7 +1840,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
         },
         "/api/v1/posts/{uuid}/comments/{commentUuid}": {
             patch: {
-                tags: ["Posts"],
+                tags: ["Posts", "Comments"],
                 summary: "Authenticated user updates his own comment by its UUID",
                 description: "Updates the properties of a specific comment identified by its unique UUID. Accepts a JSON object with the fields to be updated. Returns a 404 error if the post does not exist or the comment is not owned by the authenticated user.",
                 security: [{ bearerAuth: [] }],
@@ -1413,7 +1898,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 }
             },
             delete: {
-                tags: ["Posts"],
+                tags: ["Posts", "Comments"],
                 summary: "Delete a comment by its UUID. An authenticated user can delete his own comment",
                 description: "Soft deletes the specified comment from the database using its unique UUID. Change the status of the comment to DELETED. Returns a 204 No Content status if successful or a 404 error if the comment does not exist.",
                 security: [{ bearerAuth: [] }],

@@ -73,7 +73,16 @@ export const commentStatusParam: OpenAPIV3.ParameterObject = createQueryParamete
         },
     },
     example: ["ACTIVE", "INACTIVE"],
-},)
+})
+
+export const userIsActiveParam: OpenAPIV3.ParameterObject = createQueryParameter({
+    name: "isActive",
+    description: "Filter to return only active users or return only inactive users.",
+    schema: {
+        type: "string",
+    }
+})
+
 
 export const postUuidParam: OpenAPIV3.ParameterObject = createPathParameter({
     name: "uuid",
@@ -109,4 +118,12 @@ export const profileIdParam: OpenAPIV3.ParameterObject = createPathParameter({
     }
 })
 
+export const userUuidParam: OpenAPIV3.ParameterObject = createPathParameter({
+    name: "uuid",
+    description: "UUID of the user.",
+    schema: {
+        type: "string",
+    },
+    example: "123e4567-e89b-12d3-a456-426655440000",
+})
 
