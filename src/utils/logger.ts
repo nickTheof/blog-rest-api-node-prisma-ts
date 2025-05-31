@@ -50,7 +50,7 @@ const rejectionsLogsFileTransport = new transports.File({
 });
 
 
-if (config.NODE_ENV === "development") {
+if (config.NODE_ENV === "development" || config.NODE_ENV === "test") {
     logger.add(devConsoleTransport);
 } else if (config.NODE_ENV === "production"){
     logger.add(prodFileTransport);
