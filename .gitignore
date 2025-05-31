@@ -1,6 +1,8 @@
 dist/
 node_modules/
 .env
+.env.prod
+.env.test
 .idea/
 /src/generated/prisma
 prisma/migrations
