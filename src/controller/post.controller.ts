@@ -70,7 +70,7 @@ const getAuthenticatedUserPostByUuid = catchAsync(async (req: Request, res: Resp
     const authResponse  = res as AuthResponse;
     const user: UserTokenPayload = authResponse.locals.user;
     const {uuid} = req.params;
-    const data: Post | null = await postService.getFirstByFilters(user.uuid, uuid);
+    const data: Post | null = await postService.getFirstByFilters(uuid, user.uuid);
     if (!data) {
         return next(new AppError("EntityNotFound", `Post with uuid ${uuid} not found`));
     }
@@ -115,7 +115,7 @@ const updateAuthenticatedUserPost = catchAsync(async (req: Request, res: Respons
     const user: UserTokenPayload = authResponse.locals.user;
     const data: PostUpdateSchema = req.body;
     const postUuid: string = req.params.uuid;
-    const toUpdate: Post | null = await postService.getFirstByFilters(user.uuid, postUuid);
+    const toUpdate: Post | null = await postService.getFirstByFilters(postUuid, user.uuid);
     if (!toUpdate) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${postUuid} not found!`));
     }
@@ -151,7 +151,7 @@ const authUserDeletePostByUuid = catchAsync(async (req: Request, res: Response, 
     const authResponse  = res as AuthResponse;
     const user: UserTokenPayload = authResponse.locals.user;
     const {uuid} = req.params;
-    const toDelete: Post | null = await postService.getFirstByFilters(user.uuid, uuid);
+    const toDelete: Post | null = await postService.getFirstByFilters(uuid, user.uuid);
     if (!toDelete) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${uuid} not found!`));
     }
