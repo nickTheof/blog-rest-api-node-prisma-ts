@@ -62,21 +62,21 @@ export const responserError403Forbidden= (...Roles: Role[]): OpenAPIV3.ResponseO
 
 
 export const responserError404NotFound = (entity: string) => {
-    return  createErrorResponse(`, Resource not found for ${entity}`,  {
+    return  createErrorResponse(`Resource not found for ${entity}`,  {
         status: "EntityNotFound",
         message: "Resource not found",
     })
 } ;
 
 export const responserError409Conflict = (entity: string) => {
-    return  createErrorResponse(`, Resource already exists for ${entity}`,  {
+    return  createErrorResponse(`Resource already exists for ${entity}`,  {
         status: "EntityAlreadyExists",
-        message: "Resource already exists",
+        message: "Duplicate entry on unique field.",
     })
 } ;
 
 export const responserError400Validation = (entity: string) => {
-    return  createErrorResponse(`, Validation error for ${entity}`,  {
+    return  createErrorResponse(`Validation error for ${entity}`,  {
         status: "ValidationError",
         message: "Validation error",
     })

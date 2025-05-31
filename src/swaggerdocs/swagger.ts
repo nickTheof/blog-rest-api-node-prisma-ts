@@ -4,10 +4,17 @@ import {
     responserError400InvalidQueryParams, responserError400Validation,
     responserError401,
     responserError403Forbidden,
-    responserError404NotFound
+    responserError404NotFound, responserError409Conflict
 } from "./responses.swagger";
 import {Role} from "@prisma/client";
-import {paginationSchemaParams, postStatusParam, postUuidParam} from "./params.swagger";
+import {
+    categoryIdParam,
+    commentStatusParam,
+    commentUuidParam,
+    paginationSchemaParams,
+    postStatusParam,
+    postUuidParam, profileIdParam
+} from "./params.swagger";
 
 const swaggerDefinition = {
     openapi: "3.0.0",
@@ -309,27 +316,8 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         },
                     },
-                    401: {
-                        description: "Authorization failed",
-                        content: {
-                            "application/json": {
-                                schema: {
-                                    type: "object",
-                                    properties: {
-                                        status: {
-                                            type: "string",
-                                            example: "error",
-                                        },
-                                        data: {
-                                            type: "string",
-                                            example: "Invalid credentials",
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
+                    401: responserError401,
+                }
             },
         },
         "/api/v1/auth/register": {
@@ -360,52 +348,8 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     201: {
                         description: "Successful local registration of a user",
                     },
-                    400: {
-                        description: "Registration failed with validation errors",
-                        content: {
-                            "application/json": {
-                                schema: {
-                                    type: "object",
-                                    properties: {
-                                        status: {
-                                            type: "string",
-                                            example: "ValidationError",
-                                        },
-                                        message: {
-                                            type: "string",
-                                            example: "Invalid input.",
-                                        },
-                                        errors: {
-                                            type: "array",
-                                            items: {
-                                                type: "string"
-                                            }
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    409: {
-                        description: "Registration failed with conflicts",
-                        content: {
-                            "application/json": {
-                                schema: {
-                                    type: "object",
-                                    properties: {
-                                        status: {
-                                            type: "string",
-                                            example: "EntityAlreadyExists",
-                                        },
-                                        message: {
-                                            type: "string",
-                                            example: "Duplicate entry on unique field.",
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400Validation("Registration failed with invalid data"),
+                    409:responserError409Conflict("User"),
                 },
             },
         },
@@ -417,37 +361,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     "Returns a list of all categories, optionally paginated.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "paginated",
-                        in: "query",
-                        description: "Set to true to paginate results.",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            enum: ["true", "false"],
-                            default: "false"
-                        }
-                    },
-                    {
-                        name: "page",
-                        in: "query",
-                        description: "Page number (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "1"
-                        }
-                    },
-                    {
-                        name: "limit",
-                        in: "query",
-                        description: "Number of results per page (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "50"
-                        }
-                    }
+                    ...paginationSchemaParams
                 ],
                 responses: {
                     200: {
@@ -512,34 +426,8 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             }
                         }
                     },
-                    400: {
-                        description: "Invalid Query Parameters",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400InvalidQueryParams,
+                    401: responserError401,
                 },
             },
             post: {
@@ -584,56 +472,10 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         },
                     },
-                    400: {
-                        description: "Invalid request body data",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin - editor authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
-                    409: {
-                        description: "Category already exists",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityAlreadyExists",
-                                    message: "Duplicate entry on unique field.",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400Validation("Invalid request body data"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN, Role.EDITOR),
+                    409: responserError409Conflict("Category"),
                 },
             },
         },
@@ -644,13 +486,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Fetches the details of a specific category using its unique identifier. Returns a 404 error if the category does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "id",
-                        in: "path",
-                        required: true,
-                        description: "ID of the category to find",
-                        schema: { type: "integer" },
-                    },
+                   categoryIdParam
                 ],
                 responses: {
                     200: {
@@ -672,45 +508,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         }
                     },
-                    400: {
-                        description: "Invalid Category ID",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Category Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Category with id: 1 not found",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400InvalidPathParams,
+                    401: responserError401,
+                    404: responserError404NotFound("Category"),
                 }
             },
             patch: {
@@ -719,13 +519,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Updates the properties of a specific category identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN or EDITOR roles are authorized. Returns a 404 error if the category does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "id",
-                        in: "path",
-                        required: true,
-                        description: "ID of the category to update",
-                        schema: { type: "integer" },
-                    },
+                    categoryIdParam
                 ],
                 requestBody: {
                     description: "JSON with the updated category data",
@@ -763,67 +557,11 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         },
                     },
-                    400: {
-                        description: "Invalid request body data",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin or editor authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Category Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Category with id: 1 not found",
-                                },
-                            },
-                        },
-                    },
-                    409: {
-                        description: "Category already exists",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityAlreadyExists",
-                                    message: "Duplicate entry on unique field.",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400Validation("Invalid request body data"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN, Role.EDITOR),
+                    404: responserError404NotFound("Category"),
+                    409: responserError409Conflict("Category"),
                 },
             },
             delete: {
@@ -832,52 +570,16 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Permanently deletes the specified category from the database using its unique ID. Only users with ADMIN or EDITOR roles are authorized. Returns a 204 No Content status if successful or a 404 error if the category does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "id",
-                        in: "path",
-                        required: true,
-                        description: "ID of the category to find",
-                        schema: { type: "integer" },
-                    },
+                    categoryIdParam
                 ],
                 responses: {
                     204: {
                         description:
                             "Category deleted successfully. No content is returned.",
                     },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin or editor authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Category Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Category with id: 1 not found",
-                                },
-                            },
-                        },
-                    },
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN, Role.EDITOR),
+                    404: responserError404NotFound("Category"),
                 },
             }
         },
@@ -892,37 +594,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     "Returns a list of all profiles, optionally paginated.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "paginated",
-                        in: "query",
-                        description: "Set to true to paginate results.",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            enum: ["true", "false"],
-                            default: "false"
-                        }
-                    },
-                    {
-                        name: "page",
-                        in: "query",
-                        description: "Page number (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "1"
-                        }
-                    },
-                    {
-                        name: "limit",
-                        in: "query",
-                        description: "Number of results per page (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "50"
-                        }
-                    }
+                    ...paginationSchemaParams
                 ],
                 responses: {
                     200: {
@@ -1044,45 +716,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             }
                         }
                     },
-                    400: {
-                        description: "Invalid Query Parameters",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400InvalidQueryParams,
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
                 },
             },
         },
@@ -1093,13 +729,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Fetches the details of a specific profile using its unique identifier. Returns a 404 error if the profile does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "id",
-                        in: "path",
-                        required: true,
-                        description: "ID of the profile to find",
-                        schema: { type: "integer" },
-                    },
+                    profileIdParam
                 ],
                 responses: {
                     200: {
@@ -1121,45 +751,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         }
                     },
-                    400: {
-                        description: "Invalid Profile ID",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Profile Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Profile with id: 1 not found",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400InvalidPathParams,
+                    401: responserError401,
+                    404: responserError404NotFound("Profile"),
                 }
             },
             patch: {
@@ -1168,13 +762,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Updates the properties of a specific profile identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN role are authorized. Returns a 404 error if the profile does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "id",
-                        in: "path",
-                        required: true,
-                        description: "ID of the profile to find",
-                        schema: { type: "integer" },
-                    },
+                    profileIdParam
                 ],
                 requestBody: {
                     description: "JSON with profile data",
@@ -1214,45 +802,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         }
                     },
-                    400: {
-                        description: "Invalid Profile ID",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Profile Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Profile with id: 1 not found",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400InvalidPathParams,
+                    401: responserError401,
+                    404: responserError404NotFound("Profile"),
                 }
             },
             delete: {
@@ -1261,52 +813,16 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Permanently deletes the specified profile from the database using its unique ID. Only users with ADMIN role are authorized. Returns a 204 No Content status if successful or a 404 error if the profile does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "id",
-                        in: "path",
-                        required: true,
-                        description: "ID of the profile to find",
-                        schema: { type: "integer" },
-                    },
+                    profileIdParam
                 ],
                 responses: {
                     204: {
                         description:
                             "Profile deleted successfully. No content is returned.",
                     },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Profile Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Profile with id: 1 not found",
-                                },
-                            },
-                        },
-                    },
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("Profile"),
                 }
             }
         },
@@ -1318,53 +834,8 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     "Returns a list of all comments, optionally paginated. Support filtering by comment status.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "status",
-                        in: "query",
-                        description: "Filter by one or more comment status values. You can repeat the parameter (?status=ACTIVE&status=INACTIVE) or provide a single value.",
-                        required: false,
-                        style: "form",
-                        explode: true,
-                        schema: {
-                            type: "array",
-                            items: {
-                                type: "string",
-                                enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
-                            },
-                        },
-                        example: ["ACTIVE", "INACTIVE"],
-                    },
-                    {
-                        name: "paginated",
-                        in: "query",
-                        description: "Set to true to paginate results.",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            enum: ["true", "false"],
-                            default: "false"
-                        }
-                    },
-                    {
-                        name: "page",
-                        in: "query",
-                        description: "Page number (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "1"
-                        }
-                    },
-                    {
-                        name: "limit",
-                        in: "query",
-                        description: "Number of results per page (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "50"
-                        }
-                    }
+                    commentStatusParam,
+                    ...paginationSchemaParams
                 ],
                 responses: {
                     200: {
@@ -1403,45 +874,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             }
                         }
                     },
-                    400: {
-                        description: "Invalid Query Parameters",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400InvalidQueryParams,
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN)
                 },
             },
         },
@@ -1452,13 +887,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Fetches the details of a specific comment using its unique identifier. Returns a 404 error if the comment does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "uuid",
-                        in: "path",
-                        required: true,
-                        description: "UUID of the comment to find",
-                        schema: { type: "string" },
-                    },
+                    commentUuidParam
                 ],
                 responses: {
                     200: {
@@ -1480,45 +909,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         }
                     },
-                    400: {
-                        description: "Invalid Profile UUID",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Comment Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Comment with uuid: cef1b4d6-03d7-4a28-a9db-4493301c7e9e not found",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400InvalidPathParams,
+                    401: responserError401,
+                    404: responserError404NotFound("Comment")
                 }
             },
             patch: {
@@ -1527,13 +920,7 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Updates the properties of a specific comment identified by its unique ID. Accepts a JSON object with the fields to be updated. Only users with ADMIN role are authorized. Returns a 404 error if the profile does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "uuid",
-                        in: "path",
-                        required: true,
-                        description: "UUID of the comment to find",
-                        schema: { type: "string" },
-                    },
+                    commentUuidParam,
                 ],
                 requestBody: {
                     description: "JSON with the updated comment data",
@@ -1574,39 +961,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             },
                         }
                     },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Profile Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Profile with id: 1 not found",
-                                },
-                            },
-                        },
-                    },
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("Profile")
                 }
             },
             delete: {
@@ -1615,52 +972,16 @@ export const swaggerOptions: OpenAPIV3.Document = {
                 description: "Permanently deletes the specified comment from the database using its unique UUID. Only users with ADMIN role are authorized. Returns a 204 No Content status if successful or a 404 error if the comment does not exist.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "uuid",
-                        in: "path",
-                        required: true,
-                        description: "UUID of the comment to find",
-                        schema: { type: "string" },
-                    },
+                   commentUuidParam
                 ],
                 responses: {
                     204: {
                         description:
                             "Comment deleted successfully. No content is returned.",
                     },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Comment Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Comment with uuid: cef1b4d6-03d7-4a28-a9db-4493301c7e9e not found",
-                                },
-                            },
-                        },
-                    },
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("Comment")
                 }
             }
         },
@@ -1672,60 +993,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     "Returns a list of all comments of a specific user, optionally paginated. Support filtering by comment status.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "uuid",
-                        in: "path",
-                        required: true,
-                        description: "UUID of the user to find its comments",
-                        schema: { type: "string" },
-                    },
-                    {
-                        name: "status",
-                        in: "query",
-                        description: "Filter by one or more comment status values. You can repeat the parameter (?status=ACTIVE&status=INACTIVE) or provide a single value.",
-                        required: false,
-                        style: "form",
-                        explode: true,
-                        schema: {
-                            type: "array",
-                            items: {
-                                type: "string",
-                                enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
-                            },
-                        },
-                        example: ["ACTIVE", "INACTIVE"],
-                    },
-                    {
-                        name: "paginated",
-                        in: "query",
-                        description: "Set to true to paginate results.",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            enum: ["true", "false"],
-                            default: "false"
-                        }
-                    },
-                    {
-                        name: "page",
-                        in: "query",
-                        description: "Page number (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "1"
-                        }
-                    },
-                    {
-                        name: "limit",
-                        in: "query",
-                        description: "Number of results per page (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "50"
-                        }
-                    },
+                    commentUuidParam,
+                    commentStatusParam,
+                    ...paginationSchemaParams,
                 ],
                 responses: {
                     200: {
@@ -1764,56 +1034,10 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             }
                         }
                     },
-                    400: {
-                        description: "Invalid Query Parameters",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "User Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "User with uuid: cef1b4d6-03d7-4a28-a9db-4493301c7e9e not found",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400Validation("Comment"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("User")
                 },
             },
         },
@@ -1825,60 +1049,9 @@ export const swaggerOptions: OpenAPIV3.Document = {
                     "Returns a list of all comments of a specific post, optionally paginated. Support filtering by comment status.",
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    {
-                        name: "uuid",
-                        in: "path",
-                        required: true,
-                        description: "UUID of the post to find its comments",
-                        schema: { type: "string" },
-                    },
-                    {
-                        name: "status",
-                        in: "query",
-                        description: "Filter by one or more comment status values. You can repeat the parameter (?status=ACTIVE&status=INACTIVE) or provide a single value.",
-                        required: false,
-                        style: "form",
-                        explode: true,
-                        schema: {
-                            type: "array",
-                            items: {
-                                type: "string",
-                                enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
-                            },
-                        },
-                        example: ["ACTIVE", "INACTIVE"],
-                    },
-                    {
-                        name: "paginated",
-                        in: "query",
-                        description: "Set to true to paginate results.",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            enum: ["true", "false"],
-                            default: "false"
-                        }
-                    },
-                    {
-                        name: "page",
-                        in: "query",
-                        description: "Page number (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "1"
-                        }
-                    },
-                    {
-                        name: "limit",
-                        in: "query",
-                        description: "Number of results per page (paginated mode only).",
-                        required: false,
-                        schema: {
-                            type: "string",
-                            default: "50"
-                        }
-                    },
+                    commentUuidParam,
+                    commentStatusParam,
+                    ...paginationSchemaParams
                 ],
                 responses: {
                     200: {
@@ -1917,56 +1090,10 @@ export const swaggerOptions: OpenAPIV3.Document = {
                             }
                         }
                     },
-                    400: {
-                        description: "Invalid Query - Path Parameters",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "ValidationError",
-                                    message: "Invalid input.",
-                                    errors: {
-                                        type: "array",
-                                        items: {
-                                            type: "string"
-                                        }
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    401: {
-                        description: "Access restriction to not authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotAuthorized",
-                                    message: "No token provided",
-                                },
-                            },
-                        },
-                    },
-                    403: {
-                        description: "Access restriction to not admin authenticated users",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityForbiddenAction",
-                                    message: "You are not authorized to perform this action",
-                                },
-                            },
-                        },
-                    },
-                    404: {
-                        description: "Post Not Found",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    status: "EntityNotFound",
-                                    message: "Post with uuid: cef1b4d6-03d7-4a28-a9db-4493301c7e9e not found",
-                                },
-                            },
-                        },
-                    },
+                    400: responserError400Validation("Query - Path Parameters"),
+                    401: responserError401,
+                    403: responserError403Forbidden(Role.ADMIN),
+                    404: responserError404NotFound("Post")
                 },
             },
         },

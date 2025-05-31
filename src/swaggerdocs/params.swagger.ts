@@ -60,6 +60,21 @@ export const postStatusParam: OpenAPIV3.ParameterObject = createQueryParameter({
     example: ["PUBLISHED", "DRAFT"],
 })
 
+export const commentStatusParam: OpenAPIV3.ParameterObject = createQueryParameter(                   {
+    name: "status",
+    description: "Filter by one or more comment status values. You can repeat the parameter (?status=ACTIVE&status=INACTIVE) or provide a single value.",
+    style: "form",
+    explode: true,
+    schema: {
+        type: "array",
+        items: {
+            type: "string",
+            enum: ["ACTIVE", "INACTIVE", "PENDING", "DELETED"],
+        },
+    },
+    example: ["ACTIVE", "INACTIVE"],
+},)
+
 export const postUuidParam: OpenAPIV3.ParameterObject = createPathParameter({
     name: "uuid",
     description: "UUID of the post.",
@@ -68,3 +83,30 @@ export const postUuidParam: OpenAPIV3.ParameterObject = createPathParameter({
     },
     example: "123e4567-e89b-12d3-a456-426655440000",
 })
+
+export const commentUuidParam: OpenAPIV3.ParameterObject = createPathParameter({
+    name: "uuid",
+    description: "UUID of the comment.",
+    schema: {
+        type: "string",
+    },
+    example: "123e4567-e89b-12d3-a456-426655440000",
+})
+
+export const categoryIdParam: OpenAPIV3.ParameterObject = createPathParameter({
+    name: "id",
+    description: "ID of the category.",
+    schema: {
+        type: "integer"
+    }
+})
+
+export const profileIdParam: OpenAPIV3.ParameterObject = createPathParameter({
+    name: "id",
+    description: "ID of the profile.",
+    schema: {
+        type: "integer"
+    }
+})
+
+
