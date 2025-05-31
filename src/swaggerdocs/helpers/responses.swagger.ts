@@ -82,3 +82,56 @@ export const responserError400Validation = (entity: string) => {
     })
 } ;
 
+export enum RefModels {
+    CATEGORY = "#/components/schemas/Category",
+    COMMENT = "#/components/schemas/Comment",
+    POST = "#/components/schemas/Post",
+    PROFILE = "#/components/schemas/Profile",
+    TAG = "#/components/schemas/Tag",
+    USER = "#/components/schemas/User",
+}
+
+export const successOKSchema = (ref: RefModels): OpenAPIV3.SchemaObject => {
+    return {
+        type: "object",
+        properties: {
+            status: {"type": "string", "example": "success"},
+            data: {
+                type: "array",
+                items: {"$ref": ref}
+            }
+        }
+    }
+}
+
+export const successOKNonPaginatedSchema = (ref: RefModels): OpenAPIV3.SchemaObject => {
+    return {
+        type: "object",
+        properties: {
+            status: {"type": "string", "example": "success"},
+            results: {"type": "integer", "example": 2},
+            data: {
+                type: "array",
+                items: {"$ref": ref}
+            }
+        }
+    }
+}
+
+export const successOKPaginatedSchema = (ref: RefModels): OpenAPIV3.SchemaObject => {
+    return {
+        type: "object",
+        properties: {
+            status: {"type": "string", "example": "success"},
+            totalItems: {"type": "integer", "example": 16},
+            totalPages: {"type": "integer", "example": 4},
+            currentPage: {"type": "integer", "example": 1},
+            limit: {"type": "integer", "example": 5},
+            data: {
+                type: "array",
+                items: {"$ref": ref}
+            }
+        }
+    }
+}
+
