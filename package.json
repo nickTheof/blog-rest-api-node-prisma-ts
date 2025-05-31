@@ -7,7 +7,7 @@
     "env:test": "cpy .env.test . --rename=.env",
     "env:prod": "cpy .env.prod . --rename=.env",
     "start:dev": "npm run env:dev && npm start",
-    "test": "npm run env:test && jest",
+    "test": "npm run env:test && jest --runInBand",
     "build": "npm run env:prod && tsc",
     "start": "npm run env:prod && node dist/server.js",
     "prisma:migrate:dev": "npm run env:prod && npx prisma migrate dev",
