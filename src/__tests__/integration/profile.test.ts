@@ -1,14 +1,17 @@
 import request from "supertest";
 import prisma from "../../prisma/client";
 import app from "../../app";
-import userService from "../../service/user.service";
-import profileService from "../../service/profile.service";
 import {ProfileWithUser} from "../../types/response.types";
 import {ApiErrorResponse, ApiPaginatedResponse, ApiResponse} from "../../utils/helpers/response.helpers";
-import {registerWithProfileAndLog, UserHelperTestCredentials} from "../utils/authHelper";
-import {Role} from "@prisma/client";
-import {createProfileWithUser, invalidProfileData, updateProfileData} from "../utils/testData";
+import {
+    createToken,
+    insertProfile,
+    insertUser,
+} from "../setup/utils/data.helper";
+import {Role, User} from "@prisma/client";
+import {invalidProfileData, updateProfileData} from "../setup/utils/testmockdata";
 import {ProfileUpdateSchema} from "../../types/zod-schemas.types";
+
 
 describe("Profile API Integration - Admin Routes", () => {
     let adminToken: string;
@@ -16,18 +19,9 @@ describe("Profile API Integration - Admin Routes", () => {
     let editorToken: string;
 
     beforeAll(async () => {
-        const admin: UserHelperTestCredentials = await registerWithProfileAndLog(Role.ADMIN);
-        const editor:UserHelperTestCredentials = await registerWithProfileAndLog(Role.EDITOR);
-        const user:UserHelperTestCredentials = await registerWithProfileAndLog(Role.USER);
-        ({token: adminToken} = admin);
-        ({token: editorToken} = editor);
-        ({token: userToken} = user);
-    })
-
-    afterAll(async () => {
-        await prisma.profile.deleteMany({});
-        await prisma.user.deleteMany({});
-        await prisma.$disconnect();
+        adminToken = await createToken(Role.ADMIN);
+        editorToken = await createToken(Role.EDITOR);
+        userToken = await createToken(Role.USER);
     })
 
     describe("GET /api/v1/profiles", () => {
@@ -39,7 +33,7 @@ describe("Profile API Integration - Admin Routes", () => {
             expect(response.status).toBe(200);
             expect(Array.isArray(body.data)).toBe(true);
             expect(body.status).toBe("success")
-            expect(body.data.length).toBe(3);
+            expect(body.data.length).toBeGreaterThanOrEqual(3);
         })
 
         it("should return paginated profiles if paginated query param is true", async () => {
@@ -114,13 +108,13 @@ describe("Profile API Integration - Admin Routes", () => {
             expect(body.errors.length).toBe(0);
         })
     })
-
     describe("GET /api/v1/profiles/:id", () => {
         let profileCreated: ProfileWithUser;
-        beforeAll(async () => {
-            profileCreated = await createProfileWithUser();
+        beforeEach(async () => {
+            const user: User = await insertUser(Role.USER, true, Date.now().toString());
+            profileCreated = await insertProfile(user.uuid);
         })
-        afterAll(async() => {
+        afterEach(async() => {
             await prisma.profile.deleteMany({
                 where: {
                     id: profileCreated.id
@@ -205,10 +199,11 @@ describe("Profile API Integration - Admin Routes", () => {
 
     describe("PATCH /api/v1/profiles/:id", () => {
         let profileCreated: ProfileWithUser;
-        beforeAll(async () => {
-            profileCreated = await createProfileWithUser();
+        beforeEach(async () => {
+            const user: User = await insertUser(Role.USER, true, Date.now().toString());
+            profileCreated = await insertProfile(user.uuid);
         })
-        afterAll(async() => {
+        afterEach(async() => {
             await prisma.profile.deleteMany({
                 where: {
                     id: profileCreated.id
@@ -313,10 +308,11 @@ describe("Profile API Integration - Admin Routes", () => {
 
     describe("DELETE /api/v1/profiles/:id", () => {
         let profileCreated: ProfileWithUser;
-        beforeAll(async () => {
-            profileCreated = await createProfileWithUser();
+        beforeEach(async () => {
+            const user: User = await insertUser(Role.USER, true, Date.now().toString());
+            profileCreated = await insertProfile(user.uuid);
         })
-        afterAll(async() => {
+        afterEach(async() => {
             await prisma.profile.deleteMany({
                 where: {
                     id: profileCreated.id

@@ -1,12 +1,10 @@
 import request from "supertest";
 import app from "../../app";
-import userService from "../../service/user.service";
-import authService from "../../service/auth.service";
 import prisma from "../../prisma/client";
 import {ApiErrorResponse, ApiPaginatedResponse, ApiResponse} from "../../utils/helpers/response.helpers";
-import {Category, User} from "@prisma/client";
-import {ca} from "zod/dist/types/v4/locales";
-import {registerAndLogUser, UserHelperTestCredentials} from "../utils/authHelper";
+import {Category, Role} from "@prisma/client";
+
+import {createToken} from "../setup/utils/data.helper";
 
 
 describe("Category API Integration", () => {
@@ -15,23 +13,12 @@ describe("Category API Integration", () => {
     let userToken: string;
 
     beforeAll(async () => {
-       const admin: UserHelperTestCredentials = await registerAndLogUser("ADMIN");
-       const editor:UserHelperTestCredentials = await registerAndLogUser("EDITOR");
-       const user:UserHelperTestCredentials = await registerAndLogUser("USER");
-        ({token: adminToken} = admin);
-        ({token: editorToken} = editor);
-        ({token: userToken} = user);
-    });
-
-    afterAll(async () => {
-        // Clean up, close DB connection
-        await prisma.category.deleteMany({});
-        await prisma.user.deleteMany({});
-        await prisma.$disconnect();
+      adminToken = await createToken(Role.ADMIN);
+      editorToken = await createToken(Role.EDITOR);
+      userToken = await createToken(Role.USER);
     });
 
     describe("POST /api/v1/categories", () => {
-
         it("admin should create a new category", async () => {
             const categoryName = "UniqueCat" + Date.now();
             const response = await request(app)
@@ -42,6 +29,8 @@ describe("Category API Integration", () => {
             expect(response.status).toBe(201);
             expect(body.status).toBe("success");
             expect(body.data.name).toBe(categoryName);
+            // Clean the created category
+            await prisma.category.delete({ where: { id: body.data.id } });
         });
 
         it("editor should create a new category", async () => {
@@ -54,6 +43,8 @@ describe("Category API Integration", () => {
             expect(response.status).toBe(201);
             expect(body.status).toBe("success");
             expect(body.data.name).toBe(categoryName);
+            // Clean the created category
+            await prisma.category.delete({ where: { id: body.data.id } });
         });
 
         it("should return 400 for invalid category name", async () => {
@@ -98,7 +89,7 @@ describe("Category API Integration", () => {
 
         it("should return 409 if category already exists", async () => {
             const categoryName = "UniqueCat" + Date.now();
-            await prisma.category.create({ data: { name: categoryName } });
+            const created: Category = await prisma.category.create({ data: { name: categoryName } });
             const response = await request(app)
                 .post("/api/v1/categories")
                 .set("Authorization", `Bearer ${adminToken}`)
@@ -109,6 +100,9 @@ describe("Category API Integration", () => {
             expect(body.message).toContain("Duplicate entry on unique field");
             expect(Array.isArray(body.errors)).toBe(true);
             expect(body.errors.length).toBe(0);
+            // clean the created category
+            await prisma.category.delete({ where: { id: created.id } });
+
         })
     })
 

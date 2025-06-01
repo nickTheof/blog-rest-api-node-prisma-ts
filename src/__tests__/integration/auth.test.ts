@@ -3,30 +3,19 @@ import prisma from "../../prisma/client";
 import app from "../../app";
 import {ApiErrorResponse, ApiResponse} from "../../utils/helpers/response.helpers";
 import {Role, User} from "@prisma/client";
-import {registerAndLogUser} from "../utils/authHelper";
+import { generateRoleEmailTest, USER_PASSWORD} from "../setup/utils/testmockdata";
+
+
+const ADMIN_EMAIL_TEST = generateRoleEmailTest(Role.ADMIN);
 
 describe('Auth API Integration Tests', () => {
-    let user: User;
-    beforeAll(async() => {
-        ({user: user} = await registerAndLogUser(Role.USER));
-    })
-
-    afterAll(async() => {
-          await prisma.user.deleteMany({
-              where: {
-                  id: user.id
-              }
-          });
-          await prisma.$disconnect();
-    })
-
     describe('POST /api/v1/auth/login', () => {
         it("should return 200 and a token for valid credentials", async () => {
             const response = await request(app)
                 .post('/api/v1/auth/login')
                 .send({
-                    email: user.email,
-                    password: "aA!12345"
+                    email: ADMIN_EMAIL_TEST,
+                    password: USER_PASSWORD
                 })
             const body: ApiResponse<null> = response.body as ApiResponse<null>;
             expect(response.status).toBe(200);
@@ -40,7 +29,7 @@ describe('Auth API Integration Tests', () => {
                 .post("/api/v1/auth/login")
                 .send({
                     email: "fake@mail.com",
-                    password: "aA!12345"
+                    password: USER_PASSWORD
                 })
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
             expect(response.status).toBe(401);
@@ -54,7 +43,7 @@ describe('Auth API Integration Tests', () => {
                 .post("/api/v1/auth/login")
                 .send({
                     email: "fake@mail",
-                    password: "aA!12345"
+                    password: USER_PASSWORD
                 })
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
             expect(response.status).toBe(401);
@@ -67,7 +56,7 @@ describe('Auth API Integration Tests', () => {
             const response = await request(app)
                 .post("/api/v1/auth/login")
                 .send({
-                    email: user.email,
+                    email: ADMIN_EMAIL_TEST,
                     password: "aA!1234"
                 })
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
@@ -79,20 +68,12 @@ describe('Auth API Integration Tests', () => {
     })
 
     describe('POST /api/v1/auth/register', () => {
-        let registerEmail = `testuser${Date.now()}@mail.com`;
-        afterAll(async () => {
-            await prisma.user.deleteMany({
-                where: {
-                    email: registerEmail
-                }
-            })
-        })
-
         it("should return 201 for successful registration", async () => {
+            const registerEmail = `testuser${Date.now()}@mail.com`;
             const registerDTO = {
                 email: registerEmail,
-                password: "aA!12345",
-                confirmPassword: "aA!12345"
+                password: USER_PASSWORD,
+                confirmPassword: USER_PASSWORD
             }
             const response = await request(app)
                 .post("/api/v1/auth/register")
@@ -102,6 +83,8 @@ describe('Auth API Integration Tests', () => {
             expect(body.status).toBe("success");
             expect(body.data).toBeDefined();
             expect(body.data.email).toBe(registerEmail)
+            // Clean the created user
+            await prisma.user.delete({ where: { id: body.data.id } });
         })
 
         it("should return 400 for invalid email", async () => {
@@ -110,8 +93,8 @@ describe('Auth API Integration Tests', () => {
                 .post("/api/v1/auth/register")
                 .send({
                     email: invalidEmail,
-                    password: "aA!12345",
-                    confirmPassword: "aA!12345"
+                    password: USER_PASSWORD,
+                    confirmPassword: USER_PASSWORD
                 })
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
             expect(response.status).toBe(400);
@@ -124,13 +107,12 @@ describe('Auth API Integration Tests', () => {
 
         it("should return 400 for passwords dont match", async () => {
             const validEmail = `testuser${Date.now()}@mail.com`
-            const password = "aA!12345";
-            const confirmPassword = "aA!12345"+Date.now();
+            const confirmPassword = USER_PASSWORD+Date.now();
             const response = await request(app)
                 .post("/api/v1/auth/register")
                 .send({
                     email: validEmail,
-                    password: password,
+                    password: USER_PASSWORD,
                     confirmPassword: confirmPassword
                 })
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
@@ -164,9 +146,9 @@ describe('Auth API Integration Tests', () => {
             const response = await request(app)
                 .post("/api/v1/auth/register")
                 .send({
-                    email: registerEmail,
-                    password: "aA!12345",
-                    confirmPassword: "aA!12345"
+                    email: ADMIN_EMAIL_TEST,
+                    password: USER_PASSWORD,
+                    confirmPassword: USER_PASSWORD
                 })
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
             expect(response.status).toBe(409);
