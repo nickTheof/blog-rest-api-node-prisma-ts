@@ -99,6 +99,13 @@ export function errorHandler(
             }))
             return;
         }
+        else if (err.getCode() === 'EntityAlreadyExists') {
+            res.status(409).json(buildErrorResponse({
+                status: 'EntityAlreadyExists',
+                message: err.message,
+            }))
+            return;
+        }
     }
 
     // 5. Fallback error
