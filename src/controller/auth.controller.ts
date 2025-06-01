@@ -2,10 +2,11 @@ import {Request, Response, NextFunction} from 'express';
 import authService from "../service/auth.service";
 import catchAsync from '../utils/catchAsync';
 import {RegisterDTOSchema, LoginDTOSchema} from "../types/zod-schemas.types";
+import {LoginUserServiceResponse} from "../types/response.types";
 
 const login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const payload: LoginDTOSchema = req.body;
-    const resp = await authService.loginUser(payload);
+    const resp: LoginUserServiceResponse = await authService.loginUser(payload);
     if (resp.status === 'success') {
         return res.status(200).json({
             status: 'success',

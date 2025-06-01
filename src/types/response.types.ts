@@ -65,3 +65,9 @@ export type FormattedCommentWithPost = Omit<CommentWithPost, 'id' | 'userId' | '
 
 export type FormattedEntityData = FormattedPost | FormattedUser | FormattedProfile | Category | FormattedCommentWithAuthorAndPost | FormattedCommentWithAuthor | FormattedCommentWithPost;
 export type FormattedArrayEntityData = FormattedEntityData[];
+
+export type LoginUserServiceResponse = {
+    status: string;
+    data?: string;
+    message?: string;
+}

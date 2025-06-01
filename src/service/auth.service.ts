@@ -6,6 +6,7 @@ import {LoginDTOSchema, RegisterDTOSchema} from "../types/zod-schemas.types";
 import {UserTokenPayload, UserForTokenVerification, VerifyTokenResponse} from "../types/user-auth.types";
 import {formatUser} from "../utils/helpers/response.helpers";
 import {User} from "@prisma/client";
+import {LoginUserServiceResponse} from "../types/response.types";
 
 
 const generateAccessToken = (user: UserTokenPayload): string => {
@@ -51,7 +52,7 @@ const verifyAccessToken = async (token: string) : Promise<VerifyTokenResponse> =
     }
 }
 
-const loginUser = async (loginDto: LoginDTOSchema): Promise<{ status: string, data?: string, message?: string }> => {
+const loginUser = async (loginDto: LoginDTOSchema): Promise<LoginUserServiceResponse> => {
     const user: UserForTokenVerification | null = await userService.getByEmail(loginDto.email);
     if (!user || !user.isActive) {
         return {
