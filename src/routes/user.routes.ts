@@ -4,7 +4,7 @@ import postController from "../controller/post.controller";
 import commentController from "../controller/comment.controller";
 import {verifyToken, verifyRoles} from "../middlewares/auth.middleware";
 import {validateBody, validateQuery, validateParams} from "../middlewares/validate.middleware";
-import {createUserSchema, updateUserSchema} from "../schemas/user.schema";
+import {createUserSchema, updateMeSchema, updateUserSchema} from "../schemas/user.schema";
 import {
     filterCommentsPaginationQuerySchema,
     filterPostsPaginationQuerySchema,
@@ -24,7 +24,7 @@ router.use(verifyToken)
 
 router.route("/me")
     .get(userController.getAuthenticatedUser)
-    .patch(validateBody(updateUserSchema), userController.updateAuthenticatedUser)
+    .patch(validateBody(updateMeSchema), userController.updateAuthenticatedUser)
     .delete(userController.deleteAuthenticatedUser);
 
 router.route("/me/posts")
