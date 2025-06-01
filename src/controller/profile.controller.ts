@@ -73,14 +73,23 @@ const createAuthenticatedUserProfile = catchAsync(async (req: Request, res: Resp
     const data: ProfileCreateSchema = req.body;
     const authResponse = res as AuthResponse;
     const user: UserTokenPayload = authResponse.locals.user;
+    const fetchProfile: ProfileWithUser | null = await profileService.getByUserId(user.id);
+    if (fetchProfile) {
+        return next(new AppError('EntityAlreadyExists', `Profile with userId ${user.id} already exists!`));
+    }
     const profile: ProfileWithUser = await profileService.create(user.uuid, data);
     const formattedProfile: FormattedEntityData = formatProfile(profile);
     return sendSuccessResponse(res, formattedProfile, 201)
 })
 
 const deleteAuthenticatedUserProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user: UserTokenPayload = res.locals.user;
-    await profileService.deleteById(user.id);
+    const authResponse = res as AuthResponse;
+    const user: UserTokenPayload = res.locals.user as UserTokenPayload;
+    const profile: ProfileWithUser | null = await profileService.getByUserId(user.id);
+    if (!profile) {
+        return next(new AppError('EntityNotFound', `Profile with userId ${user.id} not found!`));
+    }
+    await profileService.deleteById(profile.id);
     return sendSuccessResponse(res, null, 204);
 })
 
