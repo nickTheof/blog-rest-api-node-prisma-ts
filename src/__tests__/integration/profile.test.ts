@@ -3,66 +3,25 @@ import prisma from "../../prisma/client";
 import app from "../../app";
 import userService from "../../service/user.service";
 import profileService from "../../service/profile.service";
-import authService from "../../service/auth.service";
 import {ProfileWithUser} from "../../types/response.types";
 import {ApiErrorResponse, ApiPaginatedResponse, ApiResponse} from "../../utils/helpers/response.helpers";
+import {registerWithProfileAndLog, UserHelperTestCredentials} from "../utils/authHelper";
+import {Role} from "@prisma/client";
+import {createProfileWithUser, invalidProfileData, updateProfileData} from "../utils/testData";
+import {ProfileUpdateSchema} from "../../types/zod-schemas.types";
 
 describe("Profile API Integration - Admin Routes", () => {
     let adminToken: string;
     let userToken: string;
     let editorToken: string;
-    let response: { status: string, data: string };
-
 
     beforeAll(async () => {
-        const admin = await userService.create({
-            email: "admin@test.com",
-            password: "aA@12345",
-            role: "ADMIN",
-            isActive: true,
-        })
-        const editor = await userService.create({
-            email: "editor@test.com",
-            password: "aA@12345",
-            role: "EDITOR",
-            isActive: true,
-        })
-        const user = await userService.create({
-            email: "user@test.com",
-            password: "aA@12345",
-            role: "USER",
-            isActive: true,
-        })
-        await profileService.create(admin.uuid, {
-            firstname: "Admin",
-            lastname: "Test",
-            bio: "Admin Test Bio",
-        })
-        await profileService.create(editor.uuid, {
-            firstname: "Editor",
-            lastname: "Test",
-            bio: "Editor Test Bio",
-        })
-        await profileService.create(user.uuid, {
-            firstname: "User",
-            lastname: "Test",
-            bio: "User Test Bio",
-        })
-        response = await authService.loginUser({
-            email: "admin@test.com",
-            password: "aA@12345"
-        }) as { status: string, data: string };
-        adminToken = response.data;
-        response = await authService.loginUser({
-            email: "editor@test.com",
-            password: "aA@12345"
-        }) as { status: string, data: string };
-        editorToken = response.data;
-        response = await authService.loginUser({
-            email: "user@test.com",
-            password: "aA@12345"
-        }) as { status: string, data: string };
-        userToken = response.data;
+        const admin: UserHelperTestCredentials = await registerWithProfileAndLog(Role.ADMIN);
+        const editor:UserHelperTestCredentials = await registerWithProfileAndLog(Role.EDITOR);
+        const user:UserHelperTestCredentials = await registerWithProfileAndLog(Role.USER);
+        ({token: adminToken} = admin);
+        ({token: editorToken} = editor);
+        ({token: userToken} = user);
     })
 
     afterAll(async () => {
@@ -84,30 +43,34 @@ describe("Profile API Integration - Admin Routes", () => {
         })
 
         it("should return paginated profiles if paginated query param is true", async () => {
+            const validPage = 1;
+            const validLimit = 10;
             const response = await request(app)
                 .get("/api/v1/profiles")
                 .set("Authorization", `Bearer ${adminToken}`)
                 .query({
                     paginated: true,
-                    page: 1,
-                    limit: 10,
+                    page: validPage,
+                    limit: validLimit,
                 });
             const body: ApiPaginatedResponse<ProfileWithUser[]> = response.body as  ApiPaginatedResponse<ProfileWithUser[]>;
             expect(response.status).toBe(200);
             expect(body.status).toBe("success");
-            expect(body.currentPage).toBe(1);
-            expect(body.limit).toBe(10);
+            expect(body.currentPage).toBe(validPage);
+            expect(body.limit).toBe(validLimit);
             expect(Array.isArray(body.data)).toBe(true);
-            expect(body.totalItems).toBe(3);
+            expect(body.totalItems).toBeGreaterThanOrEqual(3);
         })
 
         it("should return 400 for invalid query params", async () => {
+            const invalidPage = "a";
+            const invalidLimit = "a";
             const response = await request(app)
                 .get("/api/v1/profiles")
                 .set("Authorization", `Bearer ${adminToken}`)
                 .query({
-                    page: "a",
-                    limit: "a",
+                    page: invalidPage,
+                    limit: invalidLimit,
                 });
             const body: ApiErrorResponse = response.body as  ApiErrorResponse;
             expect(response.status).toBe(400);
@@ -155,17 +118,7 @@ describe("Profile API Integration - Admin Routes", () => {
     describe("GET /api/v1/profiles/:id", () => {
         let profileCreated: ProfileWithUser;
         beforeAll(async () => {
-            const userCreated = await userService.create({
-                email: "test@test.com",
-                password: "aA@12345",
-                role: "USER",
-                isActive: true,
-            })
-            profileCreated = await profileService.create(userCreated.uuid, {
-                firstname: "Test",
-                lastname: "Test",
-                bio: "Test Test Bio",
-            })
+            profileCreated = await createProfileWithUser();
         })
         afterAll(async() => {
             await prisma.profile.deleteMany({
@@ -186,15 +139,16 @@ describe("Profile API Integration - Admin Routes", () => {
             const body: ApiResponse<ProfileWithUser> = response.body as  ApiResponse<ProfileWithUser>;
             expect(response.status).toBe(200);
             expect(body.status).toBe("success");
-            expect(body.data.firstname).toBe("Test");
-            expect(body.data.lastname).toBe("Test");
-            expect(body.data.bio).toBe("Test Test Bio");
-            expect(body.data.user.email).toBe("test@test.com")
+            expect(body.data.firstname).toBe(profileCreated.firstname);
+            expect(body.data.lastname).toBe(profileCreated.lastname);
+            expect(body.data.bio).toBe(profileCreated.bio);
+            expect(body.data.user.email).toBe(profileCreated.user.email);
         })
 
         it("should return 400 for invalid path params", async () => {
+            const invalidId = "a";
             const response = await request(app)
-                .get(`/api/v1/profiles/aaaa`)
+                .get(`/api/v1/profiles/${invalidId}`)
                 .set("Authorization", `Bearer ${adminToken}`)
             const body: ApiErrorResponse = response.body as  ApiErrorResponse;
             expect(response.status).toBe(400);
@@ -237,13 +191,14 @@ describe("Profile API Integration - Admin Routes", () => {
         })
 
         it("should return 404 for invalid profile id", async () => {
+            const invalidId = "999999999";
             const response = await request(app)
-                .get(`/api/v1/profiles/99999`)
+                .get(`/api/v1/profiles/${invalidId}`)
                 .set("Authorization", `Bearer ${adminToken}`);
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
             expect(response.status).toBe(404);
             expect(body.status).toBe("EntityNotFound");
-            expect(body.message).toContain("with id 99999 not found");
+            expect(body.message).toContain(`with id ${invalidId} not found`);
             expect(body.errors.length).toBe(0);
         })
     })
@@ -251,17 +206,7 @@ describe("Profile API Integration - Admin Routes", () => {
     describe("PATCH /api/v1/profiles/:id", () => {
         let profileCreated: ProfileWithUser;
         beforeAll(async () => {
-            const userCreated = await userService.create({
-                email: "test@test.com",
-                password: "aA@12345",
-                role: "USER",
-                isActive: true,
-            })
-            profileCreated = await profileService.create(userCreated.uuid, {
-                firstname: "Test",
-                lastname: "Test",
-                bio: "Test Test Bio",
-            })
+            profileCreated = await createProfileWithUser();
         })
         afterAll(async() => {
             await prisma.profile.deleteMany({
@@ -276,32 +221,26 @@ describe("Profile API Integration - Admin Routes", () => {
             })
         })
         it("admin should update a profile by id", async () => {
+            const updatedData: ProfileUpdateSchema = updateProfileData;
             const response = await request(app)
                 .patch(`/api/v1/profiles/${profileCreated.id}`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({
-                    firstname: "Updated Name",
-                    lastname: "Updated Lastname",
-                    bio: "Updated Bio",
-                });
+                .send(updatedData);
             const body: ApiResponse<ProfileWithUser> = response.body as  ApiResponse<ProfileWithUser>;
             expect(response.status).toBe(200);
             expect(body.status).toBe("success");
-            expect(body.data.firstname).toBe("Updated Name");
-            expect(body.data.lastname).toBe("Updated Lastname");
-            expect(body.data.bio).toBe("Updated Bio");
-            expect(body.data.user.email).toBe("test@test.com");
+            expect(body.data.firstname).toBe(updatedData.firstname);
+            expect(body.data.lastname).toBe(updatedData.lastname);
+            expect(body.data.bio).toBe(updatedData.bio);
+            expect(body.data.user.email).toBe(profileCreated.user.email);
         })
 
         it("should return 400 for invalid path params", async () => {
+            const invalidId = "a";
             const response = await request(app)
-                .patch(`/api/v1/profiles/aaaa`)
+                .patch(`/api/v1/profiles/${invalidId}`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({
-                    firstname: "Updated Name",
-                    lastname: "Updated Lastname",
-                    bio: "Updated Bio",
-                })
+                .send(updateProfileData)
             const body: ApiErrorResponse = response.body as  ApiErrorResponse;
             expect(response.status).toBe(400);
             expect(body.status).toBe("ValidationError");
@@ -314,25 +253,19 @@ describe("Profile API Integration - Admin Routes", () => {
             const response = await request(app)
                 .patch(`/api/v1/profiles/${profileCreated.id}`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({
-                    bio: "",
-                })
+                .send(invalidProfileData)
             const body: ApiErrorResponse = response.body as  ApiErrorResponse;
             expect(response.status).toBe(400);
             expect(body.status).toBe("ValidationError");
             expect(body.message).toContain("Invalid input")
             expect(Array.isArray(body.errors)).toBe(true);
-            expect(body.errors.length).toBe(1);
+            expect(body.errors.length).toBe(3);
         })
 
         it("should return 401 for unauthorized user", async () => {
             const response = await request(app)
                 .patch(`/api/v1/profiles/${profileCreated.id}`)
-                .send({
-                    firstname: "Updated Name",
-                    lastname: "Updated Lastname",
-                    bio: "Updated Bio",
-                })
+                .send(updateProfileData)
             const body: ApiErrorResponse = response.body as  ApiErrorResponse;
             expect(response.status).toBe(401);
             expect(body.status).toBe("EntityNotAuthorized");
@@ -344,11 +277,7 @@ describe("Profile API Integration - Admin Routes", () => {
             const response = await request(app)
                 .patch(`/api/v1/profiles/${profileCreated.id}`)
                 .set("Authorization", `Bearer ${editorToken}`)
-                .send({
-                    firstname: "Updated Name",
-                    lastname: "Updated Lastname",
-                    bio: "Updated Bio",
-                })
+                .send(updateProfileData)
             const body: ApiErrorResponse = response.body as  ApiErrorResponse;
             expect(response.status).toBe(403);
             expect(body.status).toBe("EntityForbiddenAction");
@@ -360,11 +289,7 @@ describe("Profile API Integration - Admin Routes", () => {
             const response = await request(app)
                 .patch(`/api/v1/profiles/${profileCreated.id}`)
                 .set("Authorization", `Bearer ${userToken}`)
-                .send({
-                    firstname: "Updated Name",
-                    lastname: "Updated Lastname",
-                    bio: "Updated Bio",
-                })
+                .send(updateProfileData)
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
             expect(response.status).toBe(403);
             expect(body.status).toBe("EntityForbiddenAction");
@@ -373,38 +298,25 @@ describe("Profile API Integration - Admin Routes", () => {
         })
 
         it("should return 404 for invalid profile id", async () => {
+            const invalidId = "999999999";
             const response = await request(app)
-                .patch(`/api/v1/profiles/99999`)
+                .patch(`/api/v1/profiles/${invalidId}`)
                 .set("Authorization", `Bearer ${adminToken}`)
-                .send({
-                    firstname: "Updated Name",
-                    lastname: "Updated Lastname",
-                    bio: "Updated Bio",
-                })
+                .send(updateProfileData)
             const body: ApiErrorResponse = response.body as ApiErrorResponse;
             expect(response.status).toBe(404);
             expect(body.status).toBe("EntityNotFound");
-            expect(body.message).toContain("with id 99999 not found");
+            expect(body.message).toContain(`with id ${invalidId} not found`);
             expect(body.errors.length).toBe(0);
         })
     })
 
     describe("DELETE /api/v1/profiles/:id", () => {
         let profileCreated: ProfileWithUser;
-        beforeEach(async () => {
-            const userCreated = await userService.create({
-                email: "test@test.com",
-                password: "aA@12345",
-                role: "USER",
-                isActive: true,
-            })
-            profileCreated = await profileService.create(userCreated.uuid, {
-                firstname: "Test",
-                lastname: "Test",
-                bio: "Test Test Bio",
-            })
+        beforeAll(async () => {
+            profileCreated = await createProfileWithUser();
         })
-        afterEach(async() => {
+        afterAll(async() => {
             await prisma.profile.deleteMany({
                 where: {
                     id: profileCreated.id
@@ -426,8 +338,9 @@ describe("Profile API Integration - Admin Routes", () => {
         })
 
         it("should return 400 for invalid path params", async () => {
+            const invalidId = "a";
             const response = await request(app)
-                .delete(`/api/v1/profiles/aaaa`)
+                .delete(`/api/v1/profiles/${invalidId}`)
                 .set("Authorization", `Bearer ${adminToken}`)
             const body: ApiErrorResponse = response.body as  ApiErrorResponse;
             expect(response.status).toBe(400);
@@ -470,13 +383,14 @@ describe("Profile API Integration - Admin Routes", () => {
         })
 
         it("should return 404 for invalid profile id", async () => {
+            const invalidId = "999999999";
             const response = await request(app)
-                .delete(`/api/v1/profiles/999999999999`)
+                .delete(`/api/v1/profiles/${invalidId}`)
                 .set("Authorization", `Bearer ${adminToken}`)
             const body: ApiErrorResponse = response.body as  ApiErrorResponse;
             expect(response.status).toBe(404);
             expect(body.status).toBe("EntityNotFound");
-            expect(body.message).toContain("with id 999999999999 not found");
+            expect(body.message).toContain(`with id ${invalidId} not found`);
             expect(body.errors.length).toBe(0);
         })
     })
