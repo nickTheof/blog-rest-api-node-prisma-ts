@@ -11,4 +11,6 @@ module.exports = {
     "**/__tests__/**/*.test.ts",
     "**/?(*.)+(spec|test).ts"
   ],
+  globalSetup: "./src/__tests__/setup/globalSetup.ts",
+  globalTeardown: "./src/__tests__/setup/globalTeardown.ts",
 };
