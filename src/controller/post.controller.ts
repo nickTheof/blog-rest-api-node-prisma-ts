@@ -2,7 +2,7 @@ import {Request, Response, NextFunction} from "express";
 import postService from "../service/post.service";
 import catchAsync from "../utils/catchAsync";
 import {AppError} from "../utils/AppError";
-import {Post} from "@prisma/client";
+import {Post, User} from "@prisma/client";
 import {AuthResponse} from "../types/user-auth.types";
 import {UserTokenPayload} from "../types/user-auth.types";
 import {
@@ -16,6 +16,7 @@ import {
     sendPaginatedResponse, sendSuccessArrayResponse, sendSuccessResponse
 } from "../utils/helpers/response.helpers";
 import {FormattedArrayEntityData, FormattedEntityData} from "../types/response.types";
+import userService from "../service/user.service";
 
 const getAllPosts = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query = res.locals.validatedQuery as FilterPostsPaginationQuery;
@@ -46,6 +47,10 @@ const getAllUserPosts = catchAsync(async (req: Request, res: Response, next: Nex
 const getAllUserPostsByUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query = res.locals.validatedQuery as FilterPostsPaginationQuery;
     const uuid: string = req.params.uuid;
+    const user: User | null = await userService.getByUuid(uuid);
+    if (!user) {
+        return next(new AppError("EntityNotFound", `User with uuid ${uuid} not found`));
+    }
     const posts: Post[] = await postService.getAll(query, uuid);
     const formattedPosts: FormattedArrayEntityData = formatPosts(posts);
     if (!query.paginated) {
