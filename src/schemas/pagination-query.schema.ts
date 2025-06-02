@@ -18,7 +18,7 @@ export const paginationQuerySchema = z.object({
         .refine((val) => Number.isInteger(val) && val > 0, {
             message: "Limit must be a positive integer",
         }),
-}).strict();
+})
 
 export const filterPostsPaginationQuerySchema = paginationQuerySchema.extend(({
     status: z.union([z.nativeEnum(PostStatus), z.array(z.nativeEnum(PostStatus))]).optional()
