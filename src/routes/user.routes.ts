@@ -9,7 +9,6 @@ import {
     filterCommentsPaginationQuerySchema,
     filterPostsPaginationQuerySchema,
     filterUsersPaginationQuerySchema,
-    paginationQuerySchema
 } from "../schemas/pagination-query.schema";
 import {postCreateSchema, postUpdateSchema} from "../schemas/post.schema";
 import {Role} from "@prisma/client";

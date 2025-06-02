@@ -1,5 +1,5 @@
 import {insertCategory, insertUser, insertProfile} from "./utils/data.helper";
-import {Category, Comment, CommentStatus, Post, PostStatus, Role, User} from "@prisma/client";
+import {Category, CommentStatus, Post, PostStatus, Role, User} from "@prisma/client";
 import {createCommentData, createPostData} from "./utils/testmockdata";
 import postService from "../../service/post.service";
 import prisma from "../../prisma/client";
