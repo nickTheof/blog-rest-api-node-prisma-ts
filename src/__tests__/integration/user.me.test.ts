@@ -4,10 +4,15 @@ import {createToken, insertProfile, insertUser} from "../setup/utils/data.helper
 import {Category, Post, PostStatus, Role, User} from "@prisma/client";
 import {ApiErrorResponse, ApiPaginatedResponse, ApiResponse} from "../../utils/helpers/response.helpers";
 import {createPostData, createProfileData, generateRoleEmailTest} from "../setup/utils/testmockdata";
-import userService from "../../service/user.service";
 import prisma from "../../prisma/client";
-import {PostCreateSchema, ProfileCreateSchema, ProfileUpdateSchema} from "../../types/zod-schemas.types";
+import {
+    PostCreateSchema,
+    PostUpdateSchema,
+    ProfileCreateSchema,
+    ProfileUpdateSchema
+} from "../../types/zod-schemas.types";
 import {ProfileWithUser} from "../../types/response.types";
+import postService from "../../service/post.service";
 
 
 describe('User API Integration - Current Authenticated User Routes', () => {
@@ -380,6 +385,281 @@ describe('User API Integration - Current Authenticated User Routes', () => {
             expect(Array.isArray(body.errors)).toBe(true);
             expect(body.errors.length).toBe(0);
         });
+    })
+
+    describe("GET /api/v1/users/me/posts/:uuid", () => {
+        let post: Post;
+        beforeAll(async () => {
+            const user = await prisma.user.findUnique({
+                where: {
+                    email: generateRoleEmailTest(Role.USER)
+                }
+            }) as User;
+            post = await prisma.post.findFirst({
+                where: {
+                    authorId: user.id
+                }
+            }) as Post;
+        })
+
+        it("should return 200 and post for valid token of user role", async () => {
+            const response = await request(app)
+                .get(`/api/v1/users/me/posts/${post.uuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+            const body = response.body as ApiResponse<Post>;
+            expect(response.status).toBe(200);
+            expect(body.status).toBe("success");
+            expect(body.data.title).toBe(post.title);
+            expect(body.data.status).toBe(post.status);
+            expect(body.data.description).toBe(post.description);
+        })
+
+        it("should return 400 for invalid uuid", async () => {
+            const invalidUuid = "invalidUuid";
+            const response = await request(app)
+                .get(`/api/v1/users/me/posts/${invalidUuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(400);
+            expect(body.status).toBe("ValidationError");
+            expect(body.message).toContain("Invalid input")
+            expect(Array.isArray(body.errors)).toBe(true);
+        })
+
+        it("should return 401 for invalid token", async () => {
+            const invalidToken = "invalidToken";
+            const response = await request(app)
+                .get(`/api/v1/users/me/posts/${post.uuid}`)
+                .set('Authorization',`Bearer ${invalidToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(401);
+            expect(body.status).toBe("EntityNotAuthorized");
+            expect(body.message).toBe("Token is not valid");
+        })
+
+        it("should return 401 for unauthorized user", async () => {
+            const response = await request(app)
+                .get(`/api/v1/users/me/posts/${post.uuid}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(401);
+            expect(body.status).toBe("EntityNotAuthorized");
+            expect(body.message).toBe("No token provided");
+            expect(Array.isArray(body.errors)).toBe(true);
+            expect(body.errors.length).toBe(0);
+        })
+
+        it("should return 404 for post not found", async () => {
+            const uuid = "55555555-5555-5555-5555-555555555555";
+            const response = await request(app)
+                .get(`/api/v1/users/me/posts/${uuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(404);
+            expect(body.status).toBe("EntityNotFound");
+            expect(body.message).toContain("not found");
+        })
+
+        it("should return 404 for post that exists but belongs to another user", async () => {
+            const response = await request(app)
+                .get(`/api/v1/users/me/posts/${post.uuid}`)
+                .set('Authorization',`Bearer ${editorToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(404);
+            expect(body.status).toBe("EntityNotFound");
+            expect(body.message).toContain("not found");
+        })
+    })
+
+    describe("PATCH /api/v1/users/me/posts/:uuid", () => {
+        let post: Post;
+        let user: User;
+        beforeAll(async () => {
+            user = await prisma.user.findUnique({
+                where: {
+                    email: generateRoleEmailTest(Role.USER)
+                }
+            }) as User;
+            post = await prisma.post.findFirst({
+                where: {
+                    authorId: user.id
+                }
+            }) as Post;
+        })
+
+        it("should return 200 and updated post for valid token of user role", async () => {
+            const postToUpdate: Post = await postService.create(user.uuid, createPostData(PostStatus.PUBLISHED, []));
+            const updatedPost: PostUpdateSchema = {
+                status: "ARCHIVED"
+            }
+            const response = await request(app)
+                .patch(`/api/v1/users/me/posts/${postToUpdate.uuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+                .send(updatedPost)
+            console.log(response.body);
+            const body = response.body as ApiResponse<Post>;
+            expect(response.status).toBe(200);
+            expect(body.status).toBe("success");
+            expect(body.data.status).toBe(updatedPost.status);
+            // clear the state
+            await postService.deleteByUuid(postToUpdate.uuid);
+        })
+
+        it("should return 400 for invalid uuid", async () => {
+            const invalidUuid = "invalidUuid";
+            const response = await request(app)
+                .patch(`/api/v1/users/me/posts/${invalidUuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(400);
+            expect(body.status).toBe("ValidationError");
+            expect(body.message).toContain("Invalid input")
+            expect(Array.isArray(body.errors)).toBe(true);
+        })
+
+        it("should return 400 for invalid post data", async () => {
+            const response = await request(app)
+                .patch(`/api/v1/users/me/posts/${post.uuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+                .send({
+                    title: "a",
+                })
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(400);
+            expect(body.status).toBe("ValidationError");
+            expect(body.message).toContain("Invalid input")
+            expect(Array.isArray(body.errors)).toBe(true);
+        })
+
+        it("should return 401 for invalid token", async () => {
+            const invalidToken = "invalidToken";
+            const response = await request(app)
+                .patch(`/api/v1/users/me/posts/${post.uuid}`)
+                .set('Authorization',`Bearer ${invalidToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(401);
+            expect(body.status).toBe("EntityNotAuthorized");
+            expect(body.message).toBe("Token is not valid");
+        })
+
+        it("should return 401 for unauthorized user", async () => {
+            const response = await request(app)
+                .patch(`/api/v1/users/me/posts/${post.uuid}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(401);
+            expect(body.status).toBe("EntityNotAuthorized");
+            expect(body.message).toBe("No token provided");
+        })
+
+        it("should return 404 for post not found", async () => {
+            const uuid = "55555555-5555-5555-5555-555555555555";
+            const response = await request(app)
+                .patch(`/api/v1/users/me/posts/${uuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+                .send({
+                    title: "updatedTitle",
+                })
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(404);
+            expect(body.status).toBe("EntityNotFound");
+            expect(body.message).toContain("not found");
+        })
+
+        it("should return 404 for post that exists but belongs to another user", async () => {
+            const response = await request(app)
+                .patch(`/api/v1/users/me/posts/${post.uuid}`)
+                .set('Authorization',`Bearer ${editorToken}`)
+                .send({
+                    title: "updatedTitle",
+                })
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(404);
+            expect(body.status).toBe("EntityNotFound");
+            expect(body.message).toContain("not found");
+        })
+    })
+
+    describe("DELETE /api/v1/users/me/posts/:uuid", () => {
+        let user: User;
+        let post: Post;
+        beforeAll(async () => {
+            user = await prisma.user.findUnique({
+                where: {
+                    email: generateRoleEmailTest(Role.USER)
+                }
+            }) as User;
+            post = await prisma.post.findFirst({
+                where: {
+                    authorId: user.id
+                }
+            }) as Post;
+        })
+
+
+        it("should return 204 and deleted post for valid token of user role", async () => {
+            const postToDelete: Post = await postService.create(user.uuid, createPostData(PostStatus.PUBLISHED, []));
+            const response = await request(app)
+                .delete(`/api/v1/users/me/posts/${postToDelete.uuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+            const body = response.body as ApiResponse<Post>;
+            expect(response.status).toBe(204);
+            expect(response.text).toBe("");
+            // clear the state as the previous test do soft delete
+            await postService.deleteByUuid(postToDelete.uuid);
+
+        })
+
+        it("should return 400 for invalid uuid", async () => {
+            const invalidUuid = "invalidUuid";
+            const response = await request(app)
+                .delete(`/api/v1/users/me/posts/${invalidUuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(400);
+            expect(body.status).toBe("ValidationError");
+            expect(body.message).toContain("Invalid input")
+            expect(Array.isArray(body.errors)).toBe(true);
+        })
+
+        it("should return 401 for invalid token", async () => {
+            const invalidToken = "invalidToken";
+            const response = await request(app)
+                .delete(`/api/v1/users/me/posts/${post.uuid}`)
+                .set('Authorization',`Bearer ${invalidToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(401);
+            expect(body.status).toBe("EntityNotAuthorized");
+            expect(body.message).toBe("Token is not valid");
+        })
+
+        it("should return 401 for unauthorized user", async () => {
+            const response = await request(app)
+                .delete(`/api/v1/users/me/posts/${post.uuid}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(401);
+            expect(body.status).toBe("EntityNotAuthorized");
+            expect(body.message).toBe("No token provided");
+        })
+
+        it("should return 404 for post not found", async () => {
+            const uuid = "55555555-5555-5555-5555-555555555555";
+            const response = await request(app)
+                .delete(`/api/v1/users/me/posts/${uuid}`)
+                .set('Authorization',`Bearer ${userToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(404);
+            expect(body.status).toBe("EntityNotFound");
+            expect(body.message).toContain("not found");
+        })
+
+        it("should return 404 for post that exists but belongs to another user", async () => {
+            const response = await request(app)
+                .delete(`/api/v1/users/me/posts/${post.uuid}`)
+                .set('Authorization',`Bearer ${editorToken}`)
+            const body = response.body as ApiErrorResponse;
+            expect(response.status).toBe(404);
+            expect(body.status).toBe("EntityNotFound");
+            expect(body.message).toContain("not found");
+        })
     })
 
     describe("GET /api/v1/users/me/profile", () => {
