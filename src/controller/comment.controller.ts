@@ -8,7 +8,7 @@ import {
 import {AuthResponse, UserTokenPayload} from "../types/user-auth.types";
 import commentService from "../service/comment.service";
 import {AppError} from "../utils/AppError";
-import {CommentStatus} from "@prisma/client";
+import {CommentStatus, Post, User} from "@prisma/client";
 import {
     formatComment,
     formatComments,
@@ -23,6 +23,8 @@ import {
     FormattedCommentWithAuthorAndPost,
     FormattedCommentWithPost
 } from "../types/response.types";
+import postService from "../service/post.service";
+import userService from "../service/user.service";
 
 
 const getAllComments = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -50,6 +52,10 @@ const getCommentByUuid = catchAsync(async (req: Request, res: Response, next: Ne
 const getAllCommentsByPostUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query: FilterCommentsPaginationQuery = res.locals.validatedQuery as FilterCommentsPaginationQuery;
     const postUuid: string = req.params.uuid;
+    const post: Post | null = await postService.getFirstByFilters(postUuid);
+    if (!post) {
+        return next(new AppError("EntityNotFound", `Post with uuid ${postUuid} not found`));
+    }
     const comments: CommentWithAuthor[] = await commentService.getAllByPostUuid(postUuid, query);
     const formattedComments: FormattedCommentWithAuthor[] = formatCommentsWithAuthor(comments);
     if (!query.paginated) {
@@ -63,6 +69,10 @@ const getAllCommentsByPostUuid = catchAsync(async (req: Request, res: Response, 
 const getAllCommentsByUserUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query: FilterCommentsPaginationQuery = res.locals.validatedQuery as FilterCommentsPaginationQuery;
     const userUuid: string = req.params.uuid;
+    const user: User | null = await userService.getByUuid(userUuid);
+    if (!user) {
+        return next(new AppError("EntityNotFound", `User with uuid ${userUuid} not found`));
+    }
     const comments: CommentWithPost[] = await commentService.getAllByUserUuid(userUuid, query);
     const formattedComments: FormattedCommentWithPost[] = formatCommentsWithPost(comments);
     if (!query.paginated) {
