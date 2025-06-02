@@ -6,13 +6,15 @@ import {filterPostsPaginationQuerySchema, paginationQuerySchema} from "../schema
 import {postUpdateSchema} from "../schemas/post.schema";
 import commentController from "../controller/comment.controller";
 import {doubleUuidCommentParamsSchema, uuidParamsSchema} from "../schemas/params-validation.schema";
-import {commentUpdateSchema} from "../schemas/comment.schema";
+import {commentCreateSchema, commentUpdateSchema} from "../schemas/comment.schema";
 
 const router:Router = Router();
+
 router.use(verifyToken)
 router.route("/:uuid/comments")
     .get(validateParams(uuidParamsSchema), validateQuery(paginationQuerySchema), commentController.getAllCommentsByPostUuid)
-    .post(commentController.createComment)
+    .post(validateParams(uuidParamsSchema), validateBody(commentCreateSchema), commentController.createComment)
+
 
 router.route("/:uuid/comments/:commentUuid")
     .patch(validateParams(doubleUuidCommentParamsSchema), validateBody(commentUpdateSchema), commentController.updateAuthenticatedUserCommentByUuid)
