@@ -1,8 +1,9 @@
 import {insertCategory, insertUser, insertProfile} from "./utils/data.helper";
-import {Category, PostStatus, Role, User} from "@prisma/client";
-import {createPostData} from "./utils/testmockdata";
+import {Category, Comment, CommentStatus, Post, PostStatus, Role, User} from "@prisma/client";
+import {createCommentData, createPostData} from "./utils/testmockdata";
 import postService from "../../service/post.service";
 import prisma from "../../prisma/client";
+import commentService from "../../service/comment.service";
 
 
 export default async () => {
@@ -31,11 +32,24 @@ export default async () => {
     const category2: Category = await insertCategory(2)
     const category3: Category = await insertCategory(3)
     const category4: Category = await insertCategory(4)
-    await postService.create(admin.uuid, createPostData(PostStatus.PUBLISHED, [category1.id, category2.id]))
-    await postService.create(admin.uuid, createPostData(PostStatus.DRAFT, [category2.id, category3.id]))
-    await postService.create(editor.uuid, createPostData(PostStatus.PUBLISHED, [category3.id, category4.id]))
-    await postService.create(editor.uuid, createPostData(PostStatus.DRAFT, [category2.id, category3.id]))
-    await postService.create(user.uuid, createPostData(PostStatus.PUBLISHED, [category1.id, category2.id]))
-    await postService.create(user.uuid, createPostData(PostStatus.DRAFT, [category1.id, category2.id]))
+    const postAdmin1: Post = await postService.create(admin.uuid, createPostData(PostStatus.PUBLISHED, [category1.id, category2.id]))
+    const postAdmin2: Post = await postService.create(admin.uuid, createPostData(PostStatus.DRAFT, [category2.id, category3.id]))
+    const postEditor1: Post = await postService.create(editor.uuid, createPostData(PostStatus.PUBLISHED, [category3.id, category4.id]))
+    const postEditor2: Post = await postService.create(editor.uuid, createPostData(PostStatus.DRAFT, [category2.id, category3.id]))
+    const postUser1: Post = await postService.create(user.uuid, createPostData(PostStatus.PUBLISHED, [category1.id, category2.id]))
+    const postUser2: Post = await postService.create(user.uuid, createPostData(PostStatus.DRAFT, [category1.id, category2.id]))
+    await commentService.create(admin.uuid,postAdmin1.uuid, createCommentData(CommentStatus.ACTIVE));
+    await commentService.create(admin.uuid,postAdmin2.uuid, createCommentData(CommentStatus.INACTIVE));
+    await commentService.create(admin.uuid,postUser2.uuid, createCommentData(CommentStatus.DELETED));
+    await commentService.create(admin.uuid,postEditor2.uuid, createCommentData(CommentStatus.PENDING));
+    await commentService.create(admin.uuid, postUser1.uuid, createCommentData(CommentStatus.ACTIVE));
+    await commentService.create(editor.uuid, postAdmin1.uuid, createCommentData(CommentStatus.ACTIVE));
+    await commentService.create(editor.uuid, postAdmin2.uuid, createCommentData(CommentStatus.INACTIVE));
+    await commentService.create(editor.uuid, postEditor1.uuid, createCommentData(CommentStatus.ACTIVE));
+    await commentService.create(user.uuid,postUser1.uuid, createCommentData(CommentStatus.ACTIVE));
+    await commentService.create(user.uuid,postAdmin1.uuid, createCommentData(CommentStatus.PENDING));
+    await commentService.create(user.uuid, postEditor1.uuid, createCommentData(CommentStatus.ACTIVE));
+
+
     console.log("✅ Global test data loaded.");
 };

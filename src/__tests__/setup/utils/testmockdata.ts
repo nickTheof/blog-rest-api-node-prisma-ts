@@ -1,11 +1,11 @@
 import {
-    CategorySchema,
+    CategorySchema, CommentCreateSchema,
     CreateUserSchema,
     PostCreateSchema, ProfileCreateSchema,
     ProfileUpdateSchema,
     UpdateUserSchema
 } from "../../../types/zod-schemas.types";
-import {PostStatus, Role} from "@prisma/client";
+import {CommentStatus, PostStatus, Role} from "@prisma/client";
 
 
 export const USER_PASSWORD = "aA!12345";
@@ -59,5 +59,12 @@ export const createPostData = (status: PostStatus, categories: number[]): PostCr
 export const createCategoryData = (random: number = 1): CategorySchema => {
     return {
         name: `Test Category ${random}`,
+    }
+}
+
+export const createCommentData = (status: CommentStatus = CommentStatus.ACTIVE) => {
+    return {
+        title: "Test Comment",
+        status: status,
     }
 }
