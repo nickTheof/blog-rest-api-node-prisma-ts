@@ -86,7 +86,7 @@ const getAuthenticatedUserPostByUuid = catchAsync(async (req: Request, res: Resp
 const getPostByUserUuidAndPostUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userUuid = req.params.uuid;
     const postUuid = req.params.postUuid;
-    const data: Post | null = await postService.getFirstByFilters(userUuid, postUuid);
+    const data: Post | null = await postService.getFirstByFilters(postUuid, userUuid);
     if (!data) {
         return next(new AppError("EntityNotFound", `Post with uuid ${postUuid} not found`));
     }
@@ -133,7 +133,7 @@ const updatePostByUserUuidAndPostUuid = catchAsync(async (req: Request, res: Res
     const userUuid: string = req.params.uuid;
     const postUuid: string = req.params.postUuid;
     const data: PostUpdateSchema = req.body;
-    const toUpdate: Post | null = await postService.getFirstByFilters(userUuid, postUuid);
+    const toUpdate: Post | null = await postService.getFirstByFilters(postUuid, userUuid);
     if (!toUpdate) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${postUuid} not found!`));
     }
@@ -167,7 +167,7 @@ const authUserDeletePostByUuid = catchAsync(async (req: Request, res: Response, 
 const deletePostByUserUuidAndPostUuid = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userUuid: string = req.params.uuid;
     const postUuid: string = req.params.postUuid;
-    const toDelete: Post | null = await postService.getFirstByFilters(userUuid, postUuid);
+    const toDelete: Post | null = await postService.getFirstByFilters(postUuid, userUuid);
     if (!toDelete) {
         return next(new AppError('EntityNotFound', `Post with Uuid ${postUuid} not found!`));
     }
