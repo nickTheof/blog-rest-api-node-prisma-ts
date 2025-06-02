@@ -13,4 +13,9 @@ module.exports = {
   ],
   globalSetup: "./src/__tests__/setup/globalSetup.ts",
   globalTeardown: "./src/__tests__/setup/globalTeardown.ts",
+  collectCoverage: true,
+  coveragePathIgnorePatterns: [
+    "/node_modules/",
+    "/logs/"
+  ],
 };
