@@ -56,20 +56,22 @@ Edit the .env files to match your local database credentials and secrets.
 
 4. **Database setup**
 
-   2. **Database setup**
+   - **Create MySQL Users for Prisma**  
+      To connect to the MySQL database, you must create dedicated Prisma Users, for each node environment.
+      For improved security, use different MySQL users for database migrations and for your Prisma Client (application runtime). The runtime user should have only the minimum privileges needed.
 
-       1. **Create MySQL Users for Prisma**  
-          To connect to the MySQL database, you must create dedicated Prisma Users, for each node environment.
-          For improved security, use different MySQL users for database migrations and for your Prisma Client (application runtime). The runtime user should have only the minimum privileges needed.
+   - **Create Database Schemas**
+       You should create a dedicated Database to each node environment.
 
-       2. **Create Database Schemas**
-           You should create a dedicated Database to each node environment.
-
-       3. **Step 3: Migrate the database schemas to set up the database schemas and create the Prisma Client**
-            ```bash
-               npx prisma migrate deploy
-            ```
-5. **Start the application**
+   - **Migrate the database schemas to set up the database schemas and create the Prisma Client**
+         ```bash
+            npx prisma migrate deploy
+         ```
+5. **Build the application**
+   ```bash
+      npm run build
+   ```
+6. **Start the application**
    ```bash
       npm run start
    ```
